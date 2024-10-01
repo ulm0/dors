@@ -22,7 +22,7 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
+	"github.com/ulm0/dors/pkg/gen"
 
 	"github.com/spf13/cobra"
 )
@@ -30,12 +30,8 @@ import (
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
-	Short: "generate docs",
-	Long: `generate docs for your go project
-either local or remote.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("gen called")
-	},
+	Short: "generate docs for your go project",
+	Run:   gen.Called(),
 }
 
 func init() {
@@ -48,6 +44,13 @@ func init() {
 	// genCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// genCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	genCmd.Flags().BoolP("print-source", "p", false, "Print source code for each symbol.")
+	genCmd.Flags().BoolP("recursive", "r", true, "Read all files in the package and generate the documentation. It can be used in combination with include, and exclude.")
+	genCmd.Flags().BoolP("respect-case", "c", true, "Respect case when matching symbols.")
+	genCmd.Flags().BoolP("short", "s", false, "One-line representation for each symbol.")
+	genCmd.Flags().BoolP("unexported", "u", false, "Include unexported symbols.")
+	genCmd.Flags().StringP("title", "t", "", "Title for the documentation, if empty the package name is used.")
+	genCmd.Flags().StringSliceP("exclude-paths", "e", []string{}, "A list of folders to exclude from the documentation.")
+	genCmd.Flags().StringSliceP("include-sections", "i", []string{"constants", "factories", "functions", "methods", "types", "variables"}, "A list of sections to include in the documentation.")
+	genCmd.Flags().StringP("output", "o", "", "Output path for the documentation. If empty the documentation is printed to stdout.")
 }
