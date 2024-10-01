@@ -3,11 +3,12 @@ package gen
 import (
 	"context"
 	"fmt"
-	"github.com/golang/gddo/doc"
-	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/golang/gddo/doc"
+	"github.com/spf13/cobra"
 )
 
 func get(ctx context.Context, client *http.Client, name, tag string) (*doc.Package, error) {
