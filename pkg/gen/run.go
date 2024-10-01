@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func get(ctx context.Context, client *http.Client, name, tag string) (*doc.Package, error) {
+func docGet(ctx context.Context, client *http.Client, name, tag string) (*doc.Package, error) {
 	p, err := doc.Get(ctx, client, name, tag)
 	if err != nil {
 		return nil, err
