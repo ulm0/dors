@@ -2,12 +2,13 @@ package template
 
 import (
 	"embed"
-	"github.com/golang/gddo/doc"
-	"github.com/ulm0/dors/pkg/gen/markdown"
 	"io"
 	"regexp"
 	"strings"
 	"text/template"
+
+	"github.com/golang/gddo/doc"
+	"github.com/ulm0/dors/pkg/gen/markdown"
 )
 
 type multiNewLineEliminator struct {

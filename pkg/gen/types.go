@@ -3,9 +3,6 @@ package gen
 import (
 	"context"
 	"encoding/json"
-	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
-	"github.com/ulm0/dors/pkg/gen/template"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -13,6 +10,11 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/ulm0/dors/pkg/gen/template"
 
 	"github.com/charmbracelet/log"
 	"github.com/golang/gddo/doc"
@@ -126,9 +128,9 @@ func New(c *http.Client) *Gen {
 	return &Gen{client: c}
 }
 
-func (g Gen) WithConfig(c Config) *Gen {
+func (g *Gen) WithConfig(c Config) *Gen {
 	g.config = c
-	return &g
+	return g
 }
 
 func (g *Gen) Create(ctx context.Context, name string, w io.Writer) error {
@@ -210,4 +212,18 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 	}
 
 	return pkg, nil
+}
+
+func (g *Gen) Called() func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		d, _ := json.Marshal(g.config)
+		if g.config.Verbose {
+			log.SetReportTimestamp(g.config.Verbose)
+			log.SetLevel(log.DebugLevel)
+			log.Debug(string(d))
+			return
+		}
+
+		log.Info(string(d))
+	}
 }

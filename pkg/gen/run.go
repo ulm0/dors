@@ -2,16 +2,19 @@ package gen
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/log"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/log"
+
 	"github.com/golang/gddo/doc"
-	"github.com/spf13/cobra"
 )
+
+func init() {
+	log.SetReportTimestamp(false)
+}
 
 func docGet(ctx context.Context, client *http.Client, name, tag string) (*doc.Package, error) {
 	p, err := doc.Get(ctx, client, name, tag)
@@ -40,11 +43,4 @@ func workaroundLocalSubDirs(p *doc.Package, pkg string) error {
 		}
 	}
 	return nil
-}
-
-func (g Gen) Called() func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
-		d, _ := json.Marshal(g.config)
-		log.Info("config", "config", string(d))
-	}
 }

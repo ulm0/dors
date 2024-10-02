@@ -22,49 +22,46 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"github.com/ulm0/dors/pkg/gen"
 	"net/http"
+
+	"github.com/ulm0/dors/pkg/gen"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	cfg    gen.Config
-	client = http.DefaultClient
-	docGen = gen.New(client)
+	cfg             gen.Config
+	client          = http.DefaultClient
+	includeSections []string
+	docGen          = gen.New(client)
 )
 
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
 	Short: "generate docs for your go project",
-	Run:   docGen.Called(),
 }
 
 func init() {
 	rootCmd.AddCommand(genCmd)
+	genCmd.Flags().StringSliceVarP(&includeSections, "include-sections", "i", []string{"constants", "factories", "functions", "methods", "types", "variables"}, "A list of sections to include in the documentation.")
+	genCmd.Flags().StringSliceVarP(&cfg.ExcludePaths, "exclude-paths", "e", []string{}, "A list of folders to exclude from the documentation.")
+	genCmd.Flags().StringVarP(&cfg.Output, "output", "o", "", "Output path for the documentation. If empty the documentation is printed to stdout.")
+	genCmd.Flags().BoolVarP(&cfg.PrintSource, "print-source", "p", false, "Print source code for each symbol.")
+	genCmd.Flags().BoolVarP(&cfg.Recursive, "recursive", "r", true, "Read all files in the package and generate the documentation. It can be used in combination with include, and exclude.")
+	genCmd.Flags().BoolVarP(&cfg.RespectCase, "respect-case", "c", true, "Respect case when matching symbols.")
+	genCmd.Flags().BoolVarP(&cfg.Short, "short", "s", false, "One-line representation for each symbol.")
+	genCmd.Flags().BoolVarP(&cfg.SkipSubPkgs, "skip-sub-pkgs", "k", false, "SkipSubPackages will omit the sub packages section from the README.")
+	genCmd.Flags().StringVarP(&cfg.Title, "title", "t", "", "Title for the documentation, if empty the package name is used.")
+	genCmd.Flags().BoolVarP(&cfg.Unexported, "unexported", "u", false, "Include unexported symbols.")
+	genCmd.Flags().BoolVarP(&cfg.Verbose, "verbose", "v", false, "Increase verbosity.")
 
-	var sections []gen.Section
-
-	includeSections := genCmd.Flags().StringSliceP("include-sections", "i", []string{"constants", "factories", "functions", "methods", "types", "variables"}, "A list of sections to include in the documentation.")
-	for _, section := range *includeSections {
-		cfg.IncludeSections = append(sections, gen.Section(section))
+	genCmd.Run = func(cmd *cobra.Command, args []string) {
+		cfg.IncludeSections = make([]gen.Section, len(includeSections))
+		for i, section := range includeSections {
+			cfg.IncludeSections[i] = gen.Section(section)
+		}
+		generator := docGen.WithConfig(cfg)
+		generator.Called()(cmd, args)
 	}
-
-	cfg = gen.Config{
-		// Cobra supports local flags which will only run when this command
-		PrintSource:     *genCmd.Flags().BoolP("print-source", "p", false, "Print source code for each symbol."),
-		Recursive:       *genCmd.Flags().BoolP("recursive", "r", true, "Read all files in the package and generate the documentation. It can be used in combination with include, and exclude."),
-		RespectCase:     *genCmd.Flags().BoolP("respect-case", "c", true, "Respect case when matching symbols."),
-		Short:           *genCmd.Flags().BoolP("short", "s", false, "One-line representation for each symbol."),
-		Unexported:      *genCmd.Flags().BoolP("unexported", "u", false, "Include unexported symbols."),
-		ExcludePaths:    *genCmd.Flags().StringSliceP("exclude-paths", "e", []string{}, "A list of folders to exclude from the documentation."),
-		IncludeSections: sections,
-		Output:          *genCmd.Flags().StringP("output", "o", "", "Output path for the documentation. If empty the documentation is printed to stdout."),
-		SkipSubPkgs:     *genCmd.Flags().BoolP("skip-sub-pkgs", "k", false, "SkipSubPackages will omit the sub packages section from the README."),
-		Verbose:         *genCmd.Flags().BoolP("verbose", "v", false, "Increase verbosity."),
-		Title:           *genCmd.Flags().StringP("title", "t", "", "Title for the documentation, if empty the package name is used."),
-	}
-
-	docGen = docGen.WithConfig(cfg)
 }
