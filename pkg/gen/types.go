@@ -3,6 +3,7 @@ package gen
 import (
 	"context"
 	"encoding/json"
+	"github.com/golang/gddo/gosrc"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -191,7 +192,7 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 		p.Name = override
 	}
 
-	pkg := &pkg{Package: p}
+	pk := &pkg{Package: p}
 
 	if !g.config.SkipSubPkgs {
 		f := &subPkgFetcher{
@@ -200,7 +201,7 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 			recursive:  g.config.Recursive,
 		}
 
-		pkg.SubPkgs, err = f.Fetch(ctx, p)
+		pk.SubPkgs, err = f.Fetch(ctx, p)
 		if err != nil {
 			return nil, err
 		}
@@ -211,19 +212,37 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 		log.Debugf("package: %s\n", string(d))
 	}
 
-	return pkg, nil
+	return pk, nil
 }
 
 func (g *Gen) Called() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		d, _ := json.Marshal(g.config)
-		if g.config.Verbose {
-			log.SetReportTimestamp(g.config.Verbose)
-			log.SetLevel(log.DebugLevel)
-			log.Debug(string(d))
-			return
-		}
+		//	d, _ := json.Marshal(g.config)
+		//	if g.config.Verbose {
+		//		log.SetReportTimestamp(g.config.Verbose)
+		//		log.SetLevel(log.DebugLevel)
+		//		log.Debug(string(d))
+		//		return
+		//	}
+		//
+		//	log.Info(string(d))
 
-		log.Info(string(d))
+		err := g.Create(cmd.Context(), getArgs(args), cmd.OutOrStdout())
+		if err != nil {
+			log.Fatalf("Failed: %v\n", err)
+		}
 	}
+}
+
+func getArgs(args []string) string {
+	if len(args) > 0 {
+		return args[0]
+	}
+
+	path, err := filepath.Abs("./")
+	if err != nil {
+		log.Fatal(err)
+	}
+	gosrc.SetLocalDevMode(path)
+	return "."
 }

@@ -22,18 +22,15 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"net/http"
-
 	"github.com/ulm0/dors/pkg/gen"
+	"net/http"
 
 	"github.com/spf13/cobra"
 )
 
 var (
 	cfg             gen.Config
-	client          = http.DefaultClient
 	includeSections []string
-	docGen          = gen.New(client)
 )
 
 // genCmd represents the gen command
@@ -61,7 +58,8 @@ func init() {
 		for i, section := range includeSections {
 			cfg.IncludeSections[i] = gen.Section(section)
 		}
-		generator := docGen.WithConfig(cfg)
-		generator.Called()(cmd, args)
+		client := http.DefaultClient
+		docGen := gen.New(client).WithConfig(cfg)
+		docGen.Called()(cmd, args)
 	}
 }
