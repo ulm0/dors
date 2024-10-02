@@ -2,7 +2,9 @@ package gen
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/charmbracelet/log"
 	"net/http"
 	"os"
 	"strings"
@@ -40,8 +42,9 @@ func workaroundLocalSubDirs(p *doc.Package, pkg string) error {
 	return nil
 }
 
-func Called() func(cmd *cobra.Command, args []string) {
+func (g Gen) Called() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		fmt.Println("gen called")
+		d, _ := json.Marshal(g.config)
+		log.Info("config", "config", string(d))
 	}
 }

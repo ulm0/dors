@@ -1,0 +1,63 @@
+{{ define "types" }}
+{{ if .Types }}
+
+## Types
+
+{{ range .Types }}
+
+### type [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
+
+{{ if config.RenderTypeContent }}
+{{ gocode .Decl.Text }}
+{{ else }}
+{{ gocodeEllipsis .Decl.Text }}
+{{ end }}
+
+{{ doc .Doc }}
+
+{{ if config.Consts }}
+{{ template "typesConsts" .Consts }}
+{{ end }}
+
+{{ if config.Vars }}
+{{ template "typesVars" .Vars }}
+{{ end }}
+
+{{ template "examplesNoHeading" .Examples }}
+
+{{ if config.Factories }}
+{{/* Iterate functions returning this type */}}
+{{ range .Funcs }}
+
+#### func [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
+
+{{ gocodeEllipsis .Decl.Text }}
+
+{{ doc .Doc }}
+
+{{ template "examplesNoHeading" .Examples }}
+
+{{ end }}
+{{/* Done with functions returning this type */}}
+{{ end }}
+
+{{ if config.Methods }}
+{{/* Iterate methods */}}
+{{ range .Methods }}
+
+#### func ({{ .Recv }}) [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
+
+{{ gocodeEllipsis .Decl.Text }}
+
+{{ doc .Doc }}
+
+{{ template "examplesNoHeading" .Examples }}
+
+{{ end }}
+{{/* Done with methods */}}
+{{ end }}
+
+{{ end }}
+
+{{ end }}
+{{ end }}

@@ -23,34 +23,48 @@ package cmd
 
 import (
 	"github.com/ulm0/dors/pkg/gen"
+	"net/http"
 
 	"github.com/spf13/cobra"
+)
+
+var (
+	cfg    gen.Config
+	client = http.DefaultClient
+	docGen = gen.New(client)
 )
 
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
 	Short: "generate docs for your go project",
-	Run:   gen.Called(),
+	Run:   docGen.Called(),
 }
 
 func init() {
 	rootCmd.AddCommand(genCmd)
 
-	// Here you will define your flags and configuration settings.
+	var sections []gen.Section
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// genCmd.PersistentFlags().String("foo", "", "A help for foo")
+	includeSections := genCmd.Flags().StringSliceP("include-sections", "i", []string{"constants", "factories", "functions", "methods", "types", "variables"}, "A list of sections to include in the documentation.")
+	for _, section := range *includeSections {
+		cfg.IncludeSections = append(sections, gen.Section(section))
+	}
 
-	// Cobra supports local flags which will only run when this command
-	genCmd.Flags().BoolP("print-source", "p", false, "Print source code for each symbol.")
-	genCmd.Flags().BoolP("recursive", "r", true, "Read all files in the package and generate the documentation. It can be used in combination with include, and exclude.")
-	genCmd.Flags().BoolP("respect-case", "c", true, "Respect case when matching symbols.")
-	genCmd.Flags().BoolP("short", "s", false, "One-line representation for each symbol.")
-	genCmd.Flags().BoolP("unexported", "u", false, "Include unexported symbols.")
-	genCmd.Flags().StringP("title", "t", "", "Title for the documentation, if empty the package name is used.")
-	genCmd.Flags().StringSliceP("exclude-paths", "e", []string{}, "A list of folders to exclude from the documentation.")
-	genCmd.Flags().StringSliceP("include-sections", "i", []string{"constants", "factories", "functions", "methods", "types", "variables"}, "A list of sections to include in the documentation.")
-	genCmd.Flags().StringP("output", "o", "", "Output path for the documentation. If empty the documentation is printed to stdout.")
+	cfg = gen.Config{
+		// Cobra supports local flags which will only run when this command
+		PrintSource:     *genCmd.Flags().BoolP("print-source", "p", false, "Print source code for each symbol."),
+		Recursive:       *genCmd.Flags().BoolP("recursive", "r", true, "Read all files in the package and generate the documentation. It can be used in combination with include, and exclude."),
+		RespectCase:     *genCmd.Flags().BoolP("respect-case", "c", true, "Respect case when matching symbols."),
+		Short:           *genCmd.Flags().BoolP("short", "s", false, "One-line representation for each symbol."),
+		Unexported:      *genCmd.Flags().BoolP("unexported", "u", false, "Include unexported symbols."),
+		ExcludePaths:    *genCmd.Flags().StringSliceP("exclude-paths", "e", []string{}, "A list of folders to exclude from the documentation."),
+		IncludeSections: sections,
+		Output:          *genCmd.Flags().StringP("output", "o", "", "Output path for the documentation. If empty the documentation is printed to stdout."),
+		SkipSubPkgs:     *genCmd.Flags().BoolP("skip-sub-pkgs", "k", false, "SkipSubPackages will omit the sub packages section from the README."),
+		Verbose:         *genCmd.Flags().BoolP("verbose", "v", false, "Increase verbosity."),
+		Title:           *genCmd.Flags().StringP("title", "t", "", "Title for the documentation, if empty the package name is used."),
+	}
+
+	docGen = docGen.WithConfig(cfg)
 }
