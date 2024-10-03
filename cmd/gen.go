@@ -54,9 +54,9 @@ func init() {
 	genCmd.Flags().BoolVarP(&cfg.Verbose, "verbose", "v", false, "Increase verbosity.")
 
 	genCmd.Run = func(cmd *cobra.Command, args []string) {
-		cfg.IncludeSections = make([]gen.Section, len(includeSections))
+		cfg.IncludeSections = make([]string, len(includeSections))
 		for i, section := range includeSections {
-			cfg.IncludeSections[i] = gen.Section(section)
+			cfg.IncludeSections[i] = section
 		}
 		client := http.DefaultClient
 		docGen := gen.New(client).WithConfig(cfg)

@@ -60,6 +60,14 @@ func funcs(cfg interface{}, options []markdown.Option) template.FuncMap {
 			markdown.ToMarkdown(b, s, options...)
 			return b.String()
 		},
+		"hasSection": func(sections []string, section string) bool {
+			for _, s := range sections {
+				if s == section {
+					return true
+				}
+			}
+			return false
+		},
 		"gocode": func(s string) string {
 			return "```go\n" + s + "\n```\n"
 		},
@@ -84,6 +92,15 @@ func funcs(cfg interface{}, options []markdown.Option) template.FuncMap {
 		},
 		"importPath": func(p *doc.Package) string {
 			return p.ImportPath
+		},
+		"fullName": func(p *doc.Package) string {
+			return strings.TrimPrefix(p.ImportPath, "github.com/")
+		},
+		"urlOrName": func(f *doc.File) string {
+			if f.URL != "" {
+				return f.URL
+			}
+			return "/" + f.Name
 		},
 	}
 }

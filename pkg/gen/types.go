@@ -21,17 +21,6 @@ import (
 	"github.com/golang/gddo/doc"
 )
 
-type Section string
-
-const (
-	sectionConstants Section = "constants"
-	sectionFactories Section = "factories"
-	sectionFunctions Section = "functions"
-	sectionMethods   Section = "methods"
-	sectionTypes     Section = "types"
-	sectionVariables Section = "variables"
-)
-
 type Config struct {
 	// Title for the documentation, if empty the package name is used.
 	Title string `json:"title"`
@@ -46,7 +35,7 @@ type Config struct {
 	// - variables
 	//
 	// if empty all sections are included.
-	IncludeSections []Section `json:"includeSections"`
+	IncludeSections []string `json:"includeSections"`
 	// A list of folders to exclude from the documentation.
 	// if empty nothing is excluded.
 	ExcludePaths []string `json:"excludePaths"`
@@ -151,7 +140,7 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 	}
 	sort.Strings(p.Subdirectories)
 
-	if !slices.Contains(g.config.IncludeSections, sectionFunctions) {
+	if !slices.Contains(g.config.IncludeSections, "functions") {
 		for _, f := range p.Funcs {
 			for _, e := range f.Examples {
 				if e.Name == "" {
@@ -167,7 +156,7 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 		}
 	}
 
-	if !slices.Contains(g.config.IncludeSections, sectionTypes) {
+	if !slices.Contains(g.config.IncludeSections, "types") {
 		for _, f := range p.Types {
 			for _, e := range f.Examples {
 				if e.Name == "" {
