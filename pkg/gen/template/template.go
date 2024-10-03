@@ -100,7 +100,7 @@ func funcs(cfg interface{}, options []markdown.Option) template.FuncMap {
 			if f.URL != "" {
 				return f.URL
 			}
-			return "/" + f.Name
+			return f.Name
 		},
 	}
 }

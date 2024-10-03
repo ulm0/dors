@@ -7,25 +7,23 @@
 
 ### type [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
 
-{{ if config.RenderTypeContent }}
+
 {{ gocode .Decl.Text }}
-{{ else }}
-{{ gocodeEllipsis .Decl.Text }}
-{{ end }}
+
 
 {{ doc .Doc }}
 
-{{ if config.Consts }}
+{{ if (hasSection config.IncludeSections "constants") }}
 {{ template "typesConsts" .Consts }}
 {{ end }}
 
-{{ if config.Vars }}
+{{ if (hasSection config.IncludeSections "variables") }}
 {{ template "typesVars" .Vars }}
 {{ end }}
 
 {{ template "examplesNoHeading" .Examples }}
 
-{{ if config.Factories }}
+{{ if (hasSection config.IncludeSections "factories") }}
 {{/* Iterate functions returning this type */}}
 {{ range .Funcs }}
 
@@ -41,7 +39,7 @@
 {{/* Done with functions returning this type */}}
 {{ end }}
 
-{{ if config.Methods }}
+{{ if (hasSection config.IncludeSections "methods") }}
 {{/* Iterate methods */}}
 {{ range .Methods }}
 

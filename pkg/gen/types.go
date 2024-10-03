@@ -3,7 +3,6 @@ package gen
 import (
 	"context"
 	"encoding/json"
-	"github.com/golang/gddo/gosrc"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -11,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/golang/gddo/gosrc"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"

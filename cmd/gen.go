@@ -22,8 +22,9 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"github.com/ulm0/dors/pkg/gen"
 	"net/http"
+
+	"github.com/ulm0/dors/pkg/gen"
 
 	"github.com/spf13/cobra"
 )
