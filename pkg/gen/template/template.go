@@ -149,13 +149,15 @@ func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
 	var sig2 strings.Builder
 	sig2.WriteString("func ")
 	if decl.Recv != nil {
-		declType := decl.Recv
+		ptr := ""
+		if decl.Recv.List[0].Type.(*ast.StarExpr).Star != 0 {
+			ptr = "*"
+		}
+		declType := decl.Recv.List[0].Type.(*ast.StarExpr).X.(*ast.Ident).Name
+
 		// Include receiver for methods
-		reciever := fmt.Sprintf("%s %s", decl.Recv.List[0].Names[0].Name, declType)
-		//err := printer.Fprint(&sig2, fset, decl.Recv)
-		//if err != nil {
-		//	return ""
-		//}
+		reciever := fmt.Sprintf("(%s %s%s)", decl.Recv.List[0].Names[0].Name, ptr, declType)
+
 		sig2.WriteString(reciever)
 		sig2.WriteString(" ")
 	}
