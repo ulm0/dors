@@ -71,9 +71,10 @@ type subPkg struct {
 }
 
 type subPkgFetcher struct {
-	client     *http.Client
-	importPath string
-	recursive  bool
+	client           *http.Client
+	importPath       string
+	recursive        bool
+	includUnexported bool
 
 	wg       sync.WaitGroup
 	mu       sync.Mutex
@@ -135,7 +136,7 @@ func (g *Gen) Create(ctx context.Context, name string, w io.Writer) error {
 
 func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 	log.Infof("getting %s\n", name)
-	p, err := docGet(ctx, g.client, name, "")
+	p, err := docGet(ctx, g.client, name, "", g.config.Unexported)
 	if err != nil {
 		return nil, err
 	}
@@ -186,9 +187,10 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 
 	if !g.config.SkipSubPkgs {
 		f := &subPkgFetcher{
-			client:     g.client,
-			importPath: name,
-			recursive:  g.config.Recursive,
+			client:           g.client,
+			importPath:       name,
+			recursive:        g.config.Recursive,
+			includUnexported: g.config.Unexported,
 		}
 
 		pk.SubPkgs, err = f.Fetch(ctx, p)
@@ -207,16 +209,6 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 
 func (g *Gen) Called() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		//	d, _ := json.Marshal(g.config)
-		//	if g.config.Verbose {
-		//		log.SetReportTimestamp(g.config.Verbose)
-		//		log.SetLevel(log.DebugLevel)
-		//		log.Debug(string(d))
-		//		return
-		//	}
-		//
-		//	log.Info(string(d))
-
 		err := g.Create(cmd.Context(), getArgs(args), cmd.OutOrStdout())
 		if err != nil {
 			log.Fatalf("Failed: %v\n", err)
