@@ -2,6 +2,8 @@ package common
 
 import (
 	"fmt"
+	"go/doc"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,4 +38,20 @@ func CollectGoFiles(dir, subDir string) ([]GoFile, error) {
 	}
 
 	return files, nil
+}
+
+// pkg is used to store the package information.
+type Pkg struct {
+	Package  *doc.Package
+	FilesSet *token.FileSet
+	SubPkgs  []SubPkg
+	Files    []GoFile
+}
+
+// subPkg is used to store the sub package information.
+type SubPkg struct {
+	Path     string
+	Package  *doc.Package
+	FilesSet *token.FileSet
+	Files    []GoFile
 }

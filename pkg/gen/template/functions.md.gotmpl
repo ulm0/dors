@@ -5,7 +5,7 @@
 
 {{ range .Funcs }}
 
-### func [{{ .Name }}](#L{{ .Decl.Type.Func }})
+### func [{{ .Name }}](#L{{ lineNumber .Decl.Type.Func }})
 
 {{/* gocodeEllipsis .Doc */}}
 

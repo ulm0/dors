@@ -2,10 +2,9 @@ package gen
 
 import (
 	"fmt"
-	"go/ast"
 	"go/doc"
-	"go/parser"
 	"go/token"
+	"golang.org/x/tools/go/packages"
 	"os"
 	"path/filepath"
 	"slices"
@@ -20,40 +19,54 @@ func init() {
 	log.SetReportTimestamp(false)
 }
 
-func docGet(importPath string, includeUnexported bool) (*doc.Package, error) {
-	fs := token.NewFileSet()
+// docGet returns the documentation for a package.
+func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.FileSet, error) {
+	var loadMode packages.LoadMode = packages.NeedName |
+		packages.NeedFiles |
+		packages.NeedSyntax |
+		packages.NeedTypes |
+		packages.NeedTypesInfo |
+		packages.NeedDeps |
+		packages.NeedModule |
+		packages.NeedImports
 
-	pkgs, err := parser.ParseDir(fs, importPath, func(info os.FileInfo) bool {
-		return strings.HasSuffix(info.Name(), ".go") && !strings.HasSuffix(info.Name(), "_test.go")
-	}, parser.ParseComments)
+	cfg := &packages.Config{
+		Mode:  loadMode,
+		Dir:   importPath,
+		Tests: false,
+	}
+
+	pkgs, err := packages.Load(cfg, importPath)
 	if err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", importPath, err)
+		return nil, nil, fmt.Errorf("loading package: %w", err)
 	}
 
-	var astPkg *ast.Package
-	for _, p := range pkgs {
-		astPkg = p
-		break
+	if packages.PrintErrors(pkgs) > 0 {
+		return nil, nil, fmt.Errorf("loading packages: %w", err)
 	}
 
-	if astPkg == nil {
-		return nil, fmt.Errorf("no go files found in %s", importPath)
+	if len(pkgs) == 0 {
+		return nil, nil, fmt.Errorf("no packages found in %s", importPath)
 	}
 
-	var mode doc.Mode
+	pk := pkgs[0]
+
+	var docMode doc.Mode
 	if includeUnexported {
-		mode = doc.AllDecls | doc.AllMethods
-	} else {
-		mode = 0
+		docMode = doc.AllDecls | doc.AllMethods
 	}
 
-	docPkg := doc.New(astPkg, "", mode)
+	docPkg, err := doc.NewFromFiles(pk.Fset, pk.Syntax, pk.Name, docMode)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed creating documentation: %w", err)
+	}
 
-	return docPkg, nil
+	return docPkg, pk.Fset, nil
 }
 
-func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths []string) ([]subPkg, error) {
-	var subPkgs []subPkg
+// getSubPkgs returns the sub packages of a package.
+func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths []string) ([]common.SubPkg, error) {
+	var subPkgs []common.SubPkg
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -82,7 +95,7 @@ func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths
 			}
 
 			if hasGoFiles {
-				pk, err := docGet(subDir, includeUnexported)
+				pk, _, err := docGet(subDir, includeUnexported)
 				if err != nil {
 					return nil, fmt.Errorf("failed getting %s: %w", subDir, err)
 				}
@@ -92,7 +105,7 @@ func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths
 					return nil, fmt.Errorf("failed collecting go files in %s: %w", subDir, err)
 				}
 
-				subPkgs = append(subPkgs, subPkg{Path: subDir, Package: pk, Files: files})
+				subPkgs = append(subPkgs, common.SubPkg{Path: subDir, Package: pk, Files: files})
 			}
 
 			if recursive {
@@ -108,6 +121,7 @@ func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths
 	return subPkgs, nil
 }
 
+// containsGoFiles checks if a directory contains go files.
 func containsGoFiles(dir string) (bool, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

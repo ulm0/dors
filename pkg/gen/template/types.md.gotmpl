@@ -5,9 +5,9 @@
 
 {{ range .Types }}
 
-### type [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
+### type [{{ .Name }}](#L{{ .Decl.TokPos }})
 
-{{ gocode .Decl.Text }}
+{{ gocode .Doc }}
 
 {{ doc .Doc }}
 
@@ -25,11 +25,11 @@
 {{/* Iterate functions returning this type */}}
 {{ range .Funcs }}
 
-#### func [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
-
-{{ gocodeEllipsis .Decl.Text }}
+#### func [{{ .Name }}](#L{{ lineNumber .Decl.Type.Func }})
 
 {{ doc .Doc }}
+
+{{ gocodeEllipsis .Doc }}
 
 {{ template "examplesNoHeading" .Examples }}
 
@@ -41,11 +41,11 @@
 {{/* Iterate methods */}}
 {{ range .Methods }}
 
-#### func ({{ .Recv }}) [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
-
-{{ gocodeEllipsis .Decl.Text }}
+#### func ({{ .Recv }}) [{{ .Name }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
 
 {{ doc .Doc }}
+
+{{ gocodeEllipsis .Doc }}
 
 {{ template "examplesNoHeading" .Examples }}
 

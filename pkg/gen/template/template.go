@@ -2,8 +2,12 @@ package template
 
 import (
 	"embed"
+	"fmt"
+	"github.com/ulm0/dors/pkg/common"
 	"go/doc"
+	"go/token"
 	"io"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -45,14 +49,19 @@ var files embed.FS
 
 // Execute is used to execute the README.md template.
 func Execute(w io.Writer, data interface{}, cfg interface{}, options ...markdown.Option) error {
-	templates, err := template.New("main.md.gotmpl").Funcs(funcs(cfg, options)).ParseFS(files, "*")
+	p, ok := data.(*common.Pkg)
+	if !ok {
+		return fmt.Errorf("invalid data type, expected *doc.Package got %T", data)
+	}
+
+	templates, err := template.New("main.md.gotmpl").Funcs(funcs(cfg, p.FilesSet, options)).ParseFS(files, "*")
 	if err != nil {
 		return err
 	}
 	return templates.Execute(&multiNewLineEliminator{w: w}, data)
 }
 
-func funcs(cfg interface{}, options []markdown.Option) template.FuncMap {
+func funcs(cfg interface{}, set *token.FileSet, options []markdown.Option) template.FuncMap {
 	return template.FuncMap{
 		"config": func() interface{} {
 			return cfg
@@ -93,8 +102,27 @@ func funcs(cfg interface{}, options []markdown.Option) template.FuncMap {
 		"fullName": func(p *doc.Package) string {
 			return strings.TrimPrefix(p.ImportPath, "github.com/")
 		},
-		"urlOrName": func(name string) string {
-			return name
+		"filename": func(pos token.Pos) string {
+			return filename(set, pos)
+		},
+		"lineNumber": func(pos token.Pos) int {
+			return lineNumber(set, pos)
 		},
 	}
+}
+
+func filename(fset *token.FileSet, pos token.Pos) string {
+	if pos == token.NoPos {
+		return ""
+	}
+	position := fset.Position(pos)
+	return filepath.Base(position.Filename)
+}
+
+func lineNumber(fset *token.FileSet, pos token.Pos) int {
+	if pos == token.NoPos {
+		return 0
+	}
+	position := fset.Position(pos)
+	return position.Line
 }

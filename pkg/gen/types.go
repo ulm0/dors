@@ -2,7 +2,6 @@ package gen
 
 import (
 	"encoding/json"
-	"go/doc"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -15,9 +14,9 @@ import (
 	"github.com/ulm0/dors/pkg/gen/template"
 
 	"github.com/charmbracelet/log"
-	//"github.com/golang/gddo/doc"
 )
 
+// Config is used to configure the documentation generation.
 type Config struct {
 	// Title for the documentation, if empty the package name is used.
 	Title string `json:"title"`
@@ -56,32 +55,24 @@ type Config struct {
 	Verbose bool `json:"verbose"`
 }
 
-type pkg struct {
-	Package *doc.Package
-	SubPkgs []subPkg
-	Files   []common.GoFile
-}
-
-type subPkg struct {
-	Path    string
-	Package *doc.Package
-	Files   []common.GoFile
-}
-
+// Gen is used to generate documentation for a Go package.
 type Gen struct {
 	client *http.Client
 	config Config
 }
 
+// New creates a new Gen instance.
 func New(c *http.Client) *Gen {
 	return &Gen{client: c}
 }
 
+// WithConfig is used to set the configuration for the Gen instance.
 func (g *Gen) WithConfig(c Config) *Gen {
 	g.config = c
 	return g
 }
 
+// Create is used to generate the documentation for a package.
 func (g *Gen) Create(name string, w io.Writer) error {
 	p, err := g.get(name)
 	if err != nil {
@@ -91,9 +82,10 @@ func (g *Gen) Create(name string, w io.Writer) error {
 	return template.Execute(w, p, g.config)
 }
 
-func (g *Gen) get(name string) (*pkg, error) {
+// get is used to get the package information.
+func (g *Gen) get(name string) (*common.Pkg, error) {
 	log.Infof("getting %s\n", name)
-	p, err := docGet(name, g.config.Unexported)
+	p, fset, err := docGet(name, g.config.Unexported)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +132,7 @@ func (g *Gen) get(name string) (*pkg, error) {
 		return nil, err
 	}
 
-	pk := &pkg{Package: p, Files: files}
+	pk := &common.Pkg{Package: p, Files: files, FilesSet: fset}
 
 	if !g.config.SkipSubPkgs {
 		subPkgs, err := getSubPkgs(name, g.config.Unexported, g.config.Recursive, g.config.ExcludePaths)
@@ -159,6 +151,7 @@ func (g *Gen) get(name string) (*pkg, error) {
 	return pk, nil
 }
 
+// Called is used to generate the documentation for a package.
 func (g *Gen) Called() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		err := g.Create(getArgs(args), cmd.OutOrStdout())
@@ -168,6 +161,7 @@ func (g *Gen) Called() func(cmd *cobra.Command, args []string) {
 	}
 }
 
+// getArgs is used to get the arguments for the command.
 func getArgs(args []string) string {
 	if len(args) > 0 {
 		return args[0]
