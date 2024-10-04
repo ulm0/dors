@@ -1,25 +1,21 @@
 package gen
 
 import (
-	"context"
 	"encoding/json"
+	"go/doc"
 	"io"
 	"net/http"
 	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
-	"sync"
 
-	"github.com/golang/gddo/gosrc"
+	"github.com/ulm0/dors/pkg/common"
 
-	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/ulm0/dors/pkg/gen/template"
 
 	"github.com/charmbracelet/log"
-	"github.com/golang/gddo/doc"
+	//"github.com/golang/gddo/doc"
 )
 
 type Config struct {
@@ -63,52 +59,13 @@ type Config struct {
 type pkg struct {
 	Package *doc.Package
 	SubPkgs []subPkg
+	Files   []common.GoFile
 }
 
 type subPkg struct {
-	Path string
-	Pkg  *doc.Package
-}
-
-type subPkgFetcher struct {
-	client           *http.Client
-	importPath       string
-	recursive        bool
-	includUnexported bool
-
-	wg       sync.WaitGroup
-	mu       sync.Mutex
-	errors   *multierror.Error
-	packages []subPkg
-}
-
-func (f *subPkgFetcher) Fetch(ctx context.Context, pkg *doc.Package) ([]subPkg, error) {
-	for _, subDir := range pkg.Subdirectories {
-		f.fetch(ctx, subDir)
-	}
-	f.wg.Wait()
-	sort.Slice(f.packages, func(i, j int) bool { return f.packages[i].Path < f.packages[j].Path })
-	return f.packages, f.errors.ErrorOrNil()
-}
-
-func (f *subPkgFetcher) fetch(ctx context.Context, subDir string) {
-	f.wg.Add(1)
-	importPath := f.importPath + "/" + subDir
-
-	go func() {
-		defer f.wg.Done()
-		sp, err := docGet(ctx, f.client, importPath, "")
-		f.mu.Lock()
-		defer f.mu.Unlock()
-		if err != nil {
-			f.errors = multierror.Append(f.errors, errors.Wrapf(err, "failed getting %s", importPath))
-			return
-		}
-		// Append to packages only if this directory is a go package.
-		if sp.Name != "" {
-			f.packages = append(f.packages, subPkg{Path: importPath, Pkg: sp})
-		}
-	}()
+	Path    string
+	Package *doc.Package
+	Files   []common.GoFile
 }
 
 type Gen struct {
@@ -125,8 +82,8 @@ func (g *Gen) WithConfig(c Config) *Gen {
 	return g
 }
 
-func (g *Gen) Create(ctx context.Context, name string, w io.Writer) error {
-	p, err := g.get(ctx, name)
+func (g *Gen) Create(name string, w io.Writer) error {
+	p, err := g.get(name)
 	if err != nil {
 		return err
 	}
@@ -134,13 +91,13 @@ func (g *Gen) Create(ctx context.Context, name string, w io.Writer) error {
 	return template.Execute(w, p, g.config)
 }
 
-func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
+func (g *Gen) get(name string) (*pkg, error) {
 	log.Infof("getting %s\n", name)
-	p, err := docGet(ctx, g.client, name, "", g.config.Unexported)
+	p, err := docGet(name, g.config.Unexported)
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(p.Subdirectories)
+	sort.Strings(p.Filenames)
 
 	if !slices.Contains(g.config.IncludeSections, "functions") {
 		for _, f := range p.Funcs {
@@ -174,29 +131,24 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 		}
 	}
 
-	if p.IsCmd {
-		p.Name = filepath.Base(name)
-		p.Doc = strings.TrimPrefix(p.Doc, "Package main is ")
-	}
-
 	if override := g.config.Title; override != "" {
 		p.Name = override
 	}
 
-	pk := &pkg{Package: p}
+	files, err := common.CollectGoFiles(name, "")
+	if err != nil {
+		return nil, err
+	}
+
+	pk := &pkg{Package: p, Files: files}
 
 	if !g.config.SkipSubPkgs {
-		f := &subPkgFetcher{
-			client:           g.client,
-			importPath:       name,
-			recursive:        g.config.Recursive,
-			includUnexported: g.config.Unexported,
-		}
-
-		pk.SubPkgs, err = f.Fetch(ctx, p)
+		subPkgs, err := getSubPkgs(name, g.config.Unexported, g.config.Recursive, g.config.ExcludePaths)
 		if err != nil {
 			return nil, err
 		}
+
+		pk.SubPkgs = subPkgs
 	}
 
 	if g.config.Verbose {
@@ -209,7 +161,7 @@ func (g *Gen) get(ctx context.Context, name string) (*pkg, error) {
 
 func (g *Gen) Called() func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		err := g.Create(cmd.Context(), getArgs(args), cmd.OutOrStdout())
+		err := g.Create(getArgs(args), cmd.OutOrStdout())
 		if err != nil {
 			log.Fatalf("Failed: %v\n", err)
 		}
@@ -225,6 +177,5 @@ func getArgs(args []string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gosrc.SetLocalDevMode(path)
-	return "."
+	return path
 }

@@ -56,9 +56,7 @@ func init() {
 
 	genCmd.Run = func(cmd *cobra.Command, args []string) {
 		cfg.IncludeSections = make([]string, len(includeSections))
-		for i, section := range includeSections {
-			cfg.IncludeSections[i] = section
-		}
+		copy(cfg.IncludeSections, includeSections)
 		client := http.DefaultClient
 		docGen := gen.New(client).WithConfig(cfg)
 		docGen.Called()(cmd, args)

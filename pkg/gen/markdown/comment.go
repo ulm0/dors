@@ -13,9 +13,12 @@ import (
 	"io"
 	"regexp"
 	"strings"
-	"text/template" // for HTMLEscape
+	"text/template"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/charmbracelet/log"
+	// for HTMLEscape
 )
 
 // ToMarkdown converts comment text to formatted Markdown.
@@ -45,7 +48,10 @@ func ToMarkdown(w io.Writer, text string, opts ...Option) {
 	if o.useStdlib {
 		parser := comment.Parser{Words: o.words}
 		printer := comment.Printer{HeadingLevel: 2}
-		w.Write(printer.Markdown(parser.Parse(text)))
+		_, err := w.Write(printer.Markdown(parser.Parse(text)))
+		if err != nil {
+			log.Error(err)
+		}
 		return
 	}
 

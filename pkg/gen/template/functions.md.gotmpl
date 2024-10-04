@@ -5,9 +5,9 @@
 
 {{ range .Funcs }}
 
-### func [{{ .Name }}]({{ urlOrName (index $.Files .Pos.File) }}#L{{ .Pos.Line }})
+### func [{{ .Name }}](#L{{ .Decl.Type.Func }})
 
-{{ gocodeEllipsis .Decl.Text }}
+{{/* gocodeEllipsis .Doc */}}
 
 {{ doc .Doc }}
 

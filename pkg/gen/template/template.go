@@ -2,12 +2,14 @@ package template
 
 import (
 	"embed"
+	"go/doc"
 	"io"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 
-	"github.com/golang/gddo/doc"
+	//"github.com/golang/gddo/doc"
 	"github.com/ulm0/dors/pkg/gen/markdown"
 )
 
@@ -61,12 +63,7 @@ func funcs(cfg interface{}, options []markdown.Option) template.FuncMap {
 			return b.String()
 		},
 		"hasSection": func(sections []string, section string) bool {
-			for _, s := range sections {
-				if s == section {
-					return true
-				}
-			}
-			return false
+			return slices.Contains(sections, section)
 		},
 		"gocode": func(s string) string {
 			return "```go\n" + s + "\n```\n"
@@ -96,11 +93,8 @@ func funcs(cfg interface{}, options []markdown.Option) template.FuncMap {
 		"fullName": func(p *doc.Package) string {
 			return strings.TrimPrefix(p.ImportPath, "github.com/")
 		},
-		"urlOrName": func(f *doc.File) string {
-			if f.URL != "" {
-				return f.URL
-			}
-			return f.Name
+		"urlOrName": func(name string) string {
+			return name
 		},
 	}
 }
