@@ -134,6 +134,10 @@ func lineNumber(fset *token.FileSet, pos token.Pos) int {
 
 // Helper function to get the function or method signature as a string
 func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
+	if decl == nil || decl.Type == nil {
+		return ""
+	}
+
 	var sig strings.Builder
 	err := printer.Fprint(&sig, fset, decl.Type)
 	if err != nil {
@@ -141,10 +145,6 @@ func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
 	}
 
 	signature := strings.TrimPrefix(sig.String(), "func")
-
-	if decl == nil || decl.Type == nil {
-		return ""
-	}
 
 	var sig2 strings.Builder
 	sig2.WriteString("func ")
