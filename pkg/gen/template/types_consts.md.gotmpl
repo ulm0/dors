@@ -5,6 +5,8 @@
 
 {{ range . }}
 
+##### const [{{ (index .Names 0) }}]({{ filename .Decl.Pos }}#L{{ lineNumber .Decl.Pos }})
+
 {{ doc .Doc }}
 
 {{ gocode .Decl.Text }}

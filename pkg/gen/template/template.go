@@ -3,7 +3,6 @@ package template
 import (
 	"embed"
 	"fmt"
-	"github.com/charmbracelet/log"
 	"go/ast"
 	"go/doc"
 	"go/printer"
@@ -14,6 +13,8 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/ulm0/dors/pkg/common"
 
