@@ -5,7 +5,7 @@
 
 {{ range .Types }}
 
-### type [{{ .Name }}](#L{{ .Decl.TokPos }})
+### type [{{ .Name }}]({{ filename .Decl.TokPos }}#L{{ lineNumber .Decl.TokPos }})
 
 {{ gocode .Doc }}
 
@@ -25,11 +25,11 @@
 {{/* Iterate functions returning this type */}}
 {{ range .Funcs }}
 
-#### func [{{ .Name }}](#L{{ lineNumber .Decl.Type.Func }})
+#### func [{{ .Name }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
 
 {{ doc .Doc }}
 
-{{ gocodeEllipsis .Doc }}
+{{ gocodeEllipsis (funcSignature .Decl) }}
 
 {{ template "examplesNoHeading" .Examples }}
 
@@ -45,7 +45,7 @@
 
 {{ doc .Doc }}
 
-{{ gocodeEllipsis .Doc }}
+{{ gocodeEllipsis (funcSignature .Decl) }}
 
 {{ template "examplesNoHeading" .Examples }}
 

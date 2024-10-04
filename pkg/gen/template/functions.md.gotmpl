@@ -5,11 +5,12 @@
 
 {{ range .Funcs }}
 
-### func [{{ .Name }}](#L{{ lineNumber .Decl.Type.Func }})
-
-{{/* gocodeEllipsis .Doc */}}
+### func [{{ .Name }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
 
 {{ doc .Doc }}
+
+{{ gocodeEllipsis (funcSignature .Decl) }}
+
 
 {{ template "examplesNoHeading" .Examples }}
 {{ end }}

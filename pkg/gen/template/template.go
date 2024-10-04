@@ -3,8 +3,9 @@ package template
 import (
 	"embed"
 	"fmt"
-	"github.com/ulm0/dors/pkg/common"
+	"go/ast"
 	"go/doc"
+	"go/printer"
 	"go/token"
 	"io"
 	"path/filepath"
@@ -13,7 +14,8 @@ import (
 	"strings"
 	"text/template"
 
-	//"github.com/golang/gddo/doc"
+	"github.com/ulm0/dors/pkg/common"
+
 	"github.com/ulm0/dors/pkg/gen/markdown"
 )
 
@@ -108,6 +110,9 @@ func funcs(cfg interface{}, set *token.FileSet, options []markdown.Option) templ
 		"lineNumber": func(pos token.Pos) int {
 			return lineNumber(set, pos)
 		},
+		"funcSignature": func(decl *ast.FuncDecl) string {
+			return funcSignature(set, decl)
+		},
 	}
 }
 
@@ -125,4 +130,40 @@ func lineNumber(fset *token.FileSet, pos token.Pos) int {
 	}
 	position := fset.Position(pos)
 	return position.Line
+}
+
+// Helper function to get the function or method signature as a string
+func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
+	var sig strings.Builder
+	err := printer.Fprint(&sig, fset, decl.Type)
+	if err != nil {
+		return ""
+	}
+
+	signature := strings.TrimPrefix(sig.String(), "func")
+
+	if decl == nil || decl.Type == nil {
+		return ""
+	}
+
+	var sig2 strings.Builder
+	sig2.WriteString("func ")
+	if decl.Recv != nil {
+		declType := decl.Recv
+		// Include receiver for methods
+		reciever := fmt.Sprintf("%s %s", decl.Recv.List[0].Names[0].Name, declType)
+		//err := printer.Fprint(&sig2, fset, decl.Recv)
+		//if err != nil {
+		//	return ""
+		//}
+		sig2.WriteString(reciever)
+		sig2.WriteString(" ")
+	}
+	sig2.WriteString(decl.Name.Name)
+	// Include type parameters (for generics) and the rest of the signature
+
+	// concat the rest of the signature
+	sig2.WriteString(signature)
+
+	return sig2.String()
 }

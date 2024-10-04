@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"go/doc"
 	"go/token"
-	"golang.org/x/tools/go/packages"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 
 	"github.com/ulm0/dors/pkg/common"
 
