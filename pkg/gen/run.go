@@ -101,12 +101,7 @@ func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths
 					return nil, fmt.Errorf("failed getting %s: %w", subDir, err)
 				}
 
-				files, err := common.CollectGoFiles(dir, subDir)
-				if err != nil {
-					return nil, fmt.Errorf("failed collecting go files in %s: %w", subDir, err)
-				}
-
-				subPkgs = append(subPkgs, common.SubPkg{Path: subDir, Package: pk, Files: files})
+				subPkgs = append(subPkgs, common.SubPkg{Path: subDir, Package: pk})
 			}
 
 			if recursive {

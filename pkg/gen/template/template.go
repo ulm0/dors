@@ -3,6 +3,7 @@ package template
 import (
 	"embed"
 	"fmt"
+	"github.com/charmbracelet/log"
 	"go/ast"
 	"go/doc"
 	"go/printer"
@@ -113,6 +114,9 @@ func funcs(cfg interface{}, set *token.FileSet, options []markdown.Option) templ
 		"funcSignature": func(decl *ast.FuncDecl) string {
 			return funcSignature(set, decl)
 		},
+		"fmtDeclaration": func(decl *ast.GenDecl, spec ast.Spec) string {
+			return fmtDeclaration(set, decl, spec)
+		},
 	}
 }
 
@@ -168,4 +172,23 @@ func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
 	sig2.WriteString(signature)
 
 	return sig2.String()
+}
+
+func fmtDeclaration(fset *token.FileSet, decl *ast.GenDecl, spec ast.Spec) string {
+	if decl == nil {
+		return ""
+	}
+
+	var sig strings.Builder
+
+	genDel := *decl
+	genDel.Specs = []ast.Spec{spec}
+
+	err := printer.Fprint(&sig, fset, &genDel)
+	if err != nil {
+		log.Errorf("Error printing type declaration: %v", err)
+		return ""
+	}
+
+	return sig.String()
 }

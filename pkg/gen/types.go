@@ -127,12 +127,7 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 		p.Name = override
 	}
 
-	files, err := common.CollectGoFiles(name, "")
-	if err != nil {
-		return nil, err
-	}
-
-	pk := &common.Pkg{Package: p, Files: files, FilesSet: fset}
+	pk := &common.Pkg{Package: p, FilesSet: fset}
 
 	if !g.config.SkipSubPkgs {
 		subPkgs, err := getSubPkgs(name, g.config.Unexported, g.config.Recursive, g.config.ExcludePaths)

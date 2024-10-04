@@ -7,9 +7,9 @@
 
 ### type [{{ .Name }}]({{ filename .Decl.TokPos }}#L{{ lineNumber .Decl.TokPos }})
 
-{{ gocode .Doc }}
-
 {{ doc .Doc }}
+
+{{ gocode (fmtDeclaration .Decl (index .Decl.Specs 0)) }}
 
 {{ if (hasSection config.IncludeSections "constants") }}
 {{ template "typesConsts" .Consts }}
