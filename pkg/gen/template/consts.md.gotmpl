@@ -9,7 +9,7 @@
 
 {{ doc .Doc }}
 
-{{ gocode .Decl.Text }}
+{{ gocode (fmtDeclaration .Decl (index .Decl.Specs 0)) }}
 
 {{ end }}
 

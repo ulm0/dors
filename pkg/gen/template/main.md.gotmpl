@@ -6,6 +6,10 @@
 {{ template "subpackages" . }}
 {{ end }}
 
+{{ if (not config.SkipExamples) }}
+{{ template "examples" .Package.Examples }}
+{{ end }}
+
 {{ if (hasSection config.IncludeSections "constants") }}
 {{ template "consts" .Package.Consts }}
 {{ end }}
@@ -21,3 +25,4 @@
 {{ if (hasSection config.IncludeSections "types") }}
 {{ template "types" .Package }}
 {{ end }}
+

@@ -44,6 +44,8 @@ type Config struct {
 	Unexported bool `json:"unexported"`
 	// SkipSubPackages will omit the sub packages Section from the README.
 	SkipSubPkgs bool `json:"skipSubPkgs"`
+	// SkipExamples will omit the examples from the README.
+	SkipExamples bool `json:"skipExamples"`
 	// Output path for the documentation.
 	// if empty the documentation is printed to stdout.
 	Output string `json:"output"`
@@ -78,6 +80,8 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 		return nil, err
 	}
 	sort.Strings(p.Filenames)
+
+	pk := &common.Pkg{Package: p, FilesSet: fset}
 
 	if !slices.Contains(g.config.IncludeSections, "functions") {
 		for _, f := range p.Funcs {
@@ -114,8 +118,6 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 	if override := g.config.Title; override != "" {
 		p.Name = override
 	}
-
-	pk := &common.Pkg{Package: p, FilesSet: fset}
 
 	if !g.config.SkipSubPkgs {
 		subPkgs, err := getSubPkgs(name, name, g.config.Unexported, g.config.Recursive, g.config.ExcludePaths)

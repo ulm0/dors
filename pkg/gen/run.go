@@ -6,7 +6,6 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -81,8 +80,23 @@ func getSubPkgs(baseDir string, dir string, includeUnexported bool, recursive bo
 				return nil, fmt.Errorf("failed getting relative path: %w", err)
 			}
 
-			// Check if the relative path is in the excludePaths
-			if slices.Contains(excludePaths, relPath) {
+			// Normalize the relative path for consistent comparison
+			relPath = filepath.ToSlash(relPath)
+
+			// Check if the directory is excluded or is under an excluded directory
+			excluded := false
+
+			for _, excludePath := range excludePaths {
+				excludePath = filepath.ToSlash(filepath.Clean(excludePath))
+
+				if relPath == excludePath || strings.HasPrefix(relPath, excludePath+"/") {
+					excluded = true
+					break
+				}
+			}
+
+			if excluded {
+				log.Infof("skipping path: %s\n", relPath)
 				continue
 			}
 
