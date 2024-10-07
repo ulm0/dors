@@ -156,23 +156,41 @@ func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
 
 	var sig2 strings.Builder
 	sig2.WriteString("func ")
-	if decl.Recv != nil {
-		ptr := ""
-		if decl.Recv.List[0].Type.(*ast.StarExpr).Star != 0 {
+	if decl.Recv != nil && len(decl.Recv.List) > 0 {
+		var ptr, declType string
+
+		switch recvType := decl.Recv.List[0].Type.(type) {
+		case *ast.StarExpr:
+			// Receiver is a pointer type
 			ptr = "*"
+			if ident, ok := recvType.X.(*ast.Ident); ok {
+				declType = ident.Name
+			} else {
+				declType = "unknown"
+			}
+		case *ast.Ident:
+			// Receiver is a non-pointer type
+			declType = recvType.Name
+		default:
+			// Receiver is of an unexpected type
+			declType = "unknown"
 		}
-		declType := decl.Recv.List[0].Type.(*ast.StarExpr).X.(*ast.Ident).Name
 
-		// Include receiver for methods
-		reciever := fmt.Sprintf("(%s %s%s)", decl.Recv.List[0].Names[0].Name, ptr, declType)
+		// Extract receiver name
+		receiverName := "recv"
+		if len(decl.Recv.List[0].Names) > 0 {
+			receiverName = decl.Recv.List[0].Names[0].Name
+		}
 
-		sig2.WriteString(reciever)
+		// Construct receiver string
+		receiver := fmt.Sprintf("(%s %s%s)", receiverName, ptr, declType)
+		sig2.WriteString(receiver)
 		sig2.WriteString(" ")
 	}
 	sig2.WriteString(decl.Name.Name)
 	// Include type parameters (for generics) and the rest of the signature
 
-	// concat the rest of the signature
+	// Concatenate the rest of the signature
 	sig2.WriteString(signature)
 
 	return sig2.String()
