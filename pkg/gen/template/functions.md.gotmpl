@@ -7,10 +7,9 @@
 
 ### func [{{ .Name }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
 
-{{ doc .Doc }}
-
 {{ gocodeEllipsis (funcSignature .Decl) }}
 
+{{ doc .Doc }}
 
 {{ template "examplesNoHeading" .Examples }}
 {{ end }}

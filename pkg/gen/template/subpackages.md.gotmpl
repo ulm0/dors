@@ -4,7 +4,7 @@
 ## Sub Packages
 
 {{ range .SubPkgs }}
-* [{{ basename .Path }}]({{ .Path }}){{if .Package.Doc}}: {{.Package.Doc}}{{end}}
+* [{{ .Path }}]({{ .Path }}){{if .Package.Doc}}: {{.Package.Doc}}{{end}}
 {{ end }}
 
 {{ end }}

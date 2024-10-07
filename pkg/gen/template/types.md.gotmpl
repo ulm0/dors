@@ -7,9 +7,9 @@
 
 ### type [{{ .Name }}]({{ filename .Decl.TokPos }}#L{{ lineNumber .Decl.TokPos }})
 
-{{ doc .Doc }}
-
 {{ gocode (fmtDeclaration .Decl (index .Decl.Specs 0)) }}
+
+{{ doc .Doc }}
 
 {{ if (hasSection config.IncludeSections "constants") }}
 {{ template "typesConsts" .Consts }}
@@ -27,9 +27,9 @@
 
 #### func [{{ .Name }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
 
-{{ doc .Doc }}
-
 {{ gocodeEllipsis (funcSignature .Decl) }}
+
+{{ doc .Doc }}
 
 {{ template "examplesNoHeading" .Examples }}
 
@@ -43,9 +43,9 @@
 
 #### func ({{ .Recv }}) [{{ .Name }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
 
-{{ doc .Doc }}
-
 {{ gocodeEllipsis (funcSignature .Decl) }}
+
+{{ doc .Doc }}
 
 {{ template "examplesNoHeading" .Examples }}
 
