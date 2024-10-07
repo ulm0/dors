@@ -1,21 +1,13 @@
-# main
+# Project Documentation
 
 ## Sub Packages
 
-* [cmd](./cmd)
+* [pkg/common](pkg/common/README.md)
 
-* [common](./pkg/common)
+* [pkg/gen/template](pkg/gen/template/README.md)
 
-* [gen](./pkg/gen): Package gen provides a command to generate documentation for a Go package.
+* [pkg/gen/markdown](pkg/gen/markdown/README.md)
 
-* [markdown](./pkg/gen/markdown)
+* [pkg/gen](pkg/gen/README.md): Package gen provides a command to generate documentation for a Go package.
 
-* [template](./pkg/gen/template)
-
-## Functions
-
-### func [main](main.go#L5)
-
-```go
-func main()
-```
+* [cmd](cmd/README.md)

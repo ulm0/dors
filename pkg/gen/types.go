@@ -143,13 +143,8 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 	log.Infof("Generating per-package README.md files.")
 	g.generatePerPkgReadme(pkgs, rootDir, g.config)
 
-	// Conditionally generate summary README.md if root lacks Go files
-	if !hasRootGoFiles {
-		log.Infof("Generating summary README.md.")
-		g.generateSummaryReadme(pkgs, rootDir, g.config)
-	} else {
-		log.Infof("Root has Go files. Skipping summary README.md generation.")
-	}
+	log.Infof("Generating summary README.md.")
+	g.generateSummaryReadme(pkgs, rootDir, g.config)
 }
 
 func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
