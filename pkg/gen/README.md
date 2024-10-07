@@ -4,7 +4,7 @@ Package gen provides a command to generate documentation for a Go package.
 
 ## Functions
 
-### func [collectAllPkgs](types.go#L222)
+### func [collectAllPkgs](types.go#L206)
 
 collectAllPackages gathers all packages and sub-packages into a slice.
 collectAllPackages recursively gathers all packages and sub-packages.
@@ -29,7 +29,7 @@ docGet returns the documentation for a package.
 func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
 ```
 
-### func [getArgs](types.go#L208)
+### func [getArgs](types.go#L192)
 
 getArgs is used to get the arguments for the command.
 
@@ -54,7 +54,7 @@ func init()
 
 ## Types
 
-### type [Config](types.go#L20)
+### type [Config](types.go#L21)
 
 Config is used to configure the documentation generation.
 
@@ -95,7 +95,7 @@ type Config struct {
 }
 ```
 
-### type [Gen](types.go#L56)
+### type [Gen](types.go#L57)
 
 Gen is used to generate documentation for a Go package.
 
@@ -106,7 +106,7 @@ type Gen struct {
 }
 ```
 
-#### func [New](types.go#L62)
+#### func [New](types.go#L63)
 
 New creates a new Gen instance.
 
@@ -114,7 +114,7 @@ New creates a new Gen instance.
 func New(c Config) *Gen
 ```
 
-#### func (*Gen) [Create](types.go#L67)
+#### func (*Gen) [Create](types.go#L68)
 
 Create is used to generate the documentation for a package.
 
@@ -122,15 +122,13 @@ Create is used to generate the documentation for a package.
 func (g *Gen) Create(name string, w io.Writer) error
 ```
 
-#### func (*Gen) [Run](types.go#L136)
-
-Called is used to generate the documentation for a package.
+#### func (*Gen) [Run](types.go#L112)
 
 ```go
 func (g *Gen) Run(cmd *cobra.Command, args []string)
 ```
 
-#### func (*Gen) [get](types.go#L77)
+#### func (*Gen) [get](types.go#L78)
 
 get is used to get the package information.
 

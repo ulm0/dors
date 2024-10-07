@@ -1,10 +1,11 @@
 package gen
 
 import (
+	"go/doc"
+	"go/token"
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -75,50 +76,26 @@ func (g *Gen) Create(name string, w io.Writer) error {
 
 // get is used to get the package information.
 func (g *Gen) get(name string) (*common.Pkg, error) {
-	log.Infof("getting %s\n", name)
+	log.Infof("getting %s", name)
 	p, fset, err := docGet(name, g.config.Unexported)
 	if err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "no packages found") {
+			// Root directory has no Go files; proceed without a root package
+			p = &doc.Package{
+				Name:      "", // No name since it's not a package
+				Doc:       "",
+				Filenames: []string{},
+			}
+			fset = token.NewFileSet()
+			log.Debugf("No Go files found in root directory: %s. Proceeding with sub-packages.", name)
+		} else {
+			return nil, err
+		}
+	} else {
+		sort.Strings(p.Filenames)
 	}
-	sort.Strings(p.Filenames)
 
 	pk := &common.Pkg{Package: p, FilesSet: fset}
-
-	if !slices.Contains(g.config.IncludeSections, "functions") {
-		for _, f := range p.Funcs {
-			for _, e := range f.Examples {
-				if e.Name == "" {
-					e.Name = f.Name
-				}
-
-				if e.Doc == "" {
-					e.Doc = f.Doc
-				}
-
-				p.Examples = append(p.Examples, e)
-			}
-		}
-	}
-
-	if !slices.Contains(g.config.IncludeSections, "types") {
-		for _, f := range p.Types {
-			for _, e := range f.Examples {
-				if e.Name == "" {
-					e.Name = f.Name
-				}
-
-				if e.Doc == "" {
-					e.Doc = f.Doc
-				}
-
-				p.Examples = append(p.Examples, e)
-			}
-		}
-	}
-
-	if override := g.config.Title; override != "" {
-		p.Name = override
-	}
 
 	if !g.config.SkipSubPkgs {
 		subPkgs, err := getSubPkgs(name, name, g.config.Unexported, g.config.Recursive, g.config.ExcludePaths)
@@ -132,37 +109,42 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 	return pk, nil
 }
 
-// Called is used to generate the documentation for a package.
 func (g *Gen) Run(cmd *cobra.Command, args []string) {
+	// Determine the root directory to start documentation generation
 	rootDir := getArgs(args)
-	log.Infof("generating documentation for %s\n", rootDir)
 
+	// Get the main package (may be empty if root has no Go files)
 	pkg, err := g.get(rootDir)
 	if err != nil {
-		log.Fatalf("Failed: %v\n", err)
+		log.Fatalf("Failed to get package information: %v\n", err)
 	}
 
+	// Generate per-package README.md files
+	allPackages := collectAllPkgs(pkg)
+
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, 10)
+	sem := make(chan struct{}, 10) // Limit concurrency to 10 goroutines
 
-	allPkgs := collectAllPkgs(pkg)
-	for _, p := range allPkgs {
-		// Determine the output directory for this package based on the first file
-		if len(p.Package.Filenames) == 0 {
-			log.Errorf("no files found for package %s", p.Package.Name)
-			continue
-		}
-
+	for _, p := range allPackages {
 		wg.Add(1)
-		sem <- struct{}{} // acquire a semaphore slot
+		sem <- struct{}{} // Acquire a slot
+
 		go func(p *common.Pkg) {
 			defer wg.Done()
-			defer func() { <-sem }() // release the semaphore slot
+			defer func() { <-sem }() // Release the slot
+
+			// Determine the output directory based on the first file's directory
+			if len(p.Package.Filenames) == 0 {
+				log.Errorf("No files found for package %s", p.Package.Name)
+				return
+			}
 
 			firstFile := p.Package.Filenames[0]
 			pkgPath := filepath.Dir(firstFile)
 
+			// Define the path for README.md
 			readmePath := filepath.Join(pkgPath, "README.md")
+			readmePath = filepath.Clean(readmePath) // Clean the path
 
 			// Compute the relative path from rootDir to readmePath
 			relPath, err := filepath.Rel(rootDir, readmePath)
@@ -171,7 +153,7 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 				relPath = readmePath
 			}
 
-			// Prepend "./" if the relative path does not start with ".."
+			// Prepend "./" if the relative path does not start with ".." and is not absolute
 			if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
 				relPath = "./" + relPath
 			}
@@ -182,18 +164,20 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 				log.Warnf("overwriting existing README.md in %s", relPath)
 			}
 
+			// Create or truncate the README.md file
 			file, err := os.Create(readmePath)
 			if err != nil {
-				log.Errorf("failed: %v\n", err)
-				return // Skip to the next package
+				log.Errorf("Failed to create README.md in %s: %v", pkgPath, err)
+				return
 			}
 
+			// Ensure the file is closed after writing
 			defer file.Close()
 
 			// Generate the documentation and write to README.md
 			err = template.Execute(file, p, g.config)
 			if err != nil {
-				log.Errorf("failed to write documentation for %s: %v", p.Package.Name, err)
+				log.Errorf("Failed to write documentation for %s: %v", p.Package.Name, err)
 				return
 			}
 
@@ -224,7 +208,10 @@ func collectAllPkgs(pkg *common.Pkg) []*common.Pkg {
 	var collect func(p *common.Pkg)
 
 	collect = func(p *common.Pkg) {
-		all = append(all, p)
+		// Include only packages that have Go files
+		if len(p.Package.Filenames) > 0 {
+			all = append(all, p)
+		}
 		for _, subPkg := range p.SubPkgs {
 			collect(&common.Pkg{
 				Package:  subPkg.Package,

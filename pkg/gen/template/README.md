@@ -24,7 +24,7 @@ func Execute(w io.Writer, data interface{ ... }, options ...markdown.Option) err
 func filename(fset *token.FileSet, pos token.Pos) string
 ```
 
-### func [fmtDeclaration](template.go#L181)
+### func [fmtDeclaration](template.go#L199)
 
 ```go
 func fmtDeclaration(fset *token.FileSet, decl *ast.GenDecl, spec ast.Spec) string
