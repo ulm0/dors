@@ -11,10 +11,11 @@ type Pkg struct {
 	Package		*doc.Package
 	FilesSet	*token.FileSet
 	SubPkgs		[]SubPkg
+	Path		string
 }
 ```
 
-### type [SubPkg](common.go#L16)
+### type [SubPkg](common.go#L17)
 
 SubPkg is used to store the sub package information.
 
@@ -26,13 +27,13 @@ type SubPkg struct {
 }
 ```
 
-#### func (SubPkg) [Doc](common.go#L26)
+#### func (SubPkg) [Doc](common.go#L27)
 
 ```go
 func (s SubPkg) Doc() string
 ```
 
-#### func (SubPkg) [Link](common.go#L22)
+#### func (SubPkg) [Link](common.go#L23)
 
 ```go
 func (s SubPkg) Link() string

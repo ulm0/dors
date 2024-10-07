@@ -214,10 +214,11 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 					}
 					packagePath = filepath.ToSlash(packagePath)
 					if packagePath == "." {
-						packagePath = "./" // Represent root as "./"
+						packagePath = "" // Represent root without "./"
 					} else {
-						packagePath = "./" + packagePath // Prepend "./" for consistency
+						packagePath = packagePath // Keep the path as is without "./"
 					}
+
 					pkgs = append(pkgs, &common.Pkg{
 						Package:  pk,
 						FilesSet: fs,
@@ -249,6 +250,11 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 	sem := make(chan struct{}, 10) // Limit concurrency to 10 goroutines
 
 	for _, p := range allPackages {
+		// Skip the root package if it has Go files (handled separately)
+		if p.Path == "" && len(p.Package.Filenames) > 0 {
+			continue
+		}
+
 		wg.Add(1)
 		sem <- struct{}{} // Acquire a slot
 
@@ -295,11 +301,6 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 				relPath = readmePath
 			}
 
-			// Prepend "./" if the relative path does not start with ".." and is not absolute
-			if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
-				relPath = "./" + relPath
-			}
-
 			log.Infof("Generated README.md for package %s at %s", p.Package.Name, relPath)
 		}(p)
 	}
@@ -328,8 +329,8 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 	// Prepare data for the summary template
 	subPackages := make([]common.SubPkg, 0, len(allPackages))
 	for _, p := range allPackages {
-		// Exclude the root package if it has no Go files
-		if p.Path == "./" && len(p.Package.Filenames) == 0 {
+		// Exclude the root package if it has Go files
+		if p.Path == "" && len(p.Package.Filenames) > 0 {
 			continue
 		}
 

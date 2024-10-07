@@ -4,16 +4,7 @@ Package gen provides a command to generate documentation for a Go package.
 
 ## Functions
 
-### func [collectAllPkgs](types.go#L270)
-
-collectAllPackages gathers all packages and sub-packages into a slice.
-collectAllPackages recursively gathers all packages and sub-packages.
-
-```go
-func collectAllPkgs(pkg *common.Pkg) []*common.Pkg
-```
-
-### func [containsGoFiles](run.go#L137)
+### func [containsGoFiles](run.go#L152)
 
 containsGoFiles checks if a directory contains go files.
 
@@ -26,22 +17,10 @@ func containsGoFiles(dir string) (bool, error)
 docGet returns the documentation for a package.
 
 ```go
-func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
+func docGet(dir string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
 ```
 
-### func [generatePerPkgReadme](types.go#L139)
-
-```go
-func generatePerPkgReadme(allPkgs []*common.Pkg, rootDir string, cfg Config)
-```
-
-### func [generateSummaryReadme](types.go#L206)
-
-```go
-func generateSummaryReadme(allPkgs []*common.Pkg, rootDir string, cfg Config)
-```
-
-### func [getArgs](types.go#L256)
+### func [getArgs](types.go#L360)
 
 getArgs is used to get the arguments for the command.
 
@@ -49,7 +28,7 @@ getArgs is used to get the arguments for the command.
 func getArgs(args []string) string
 ```
 
-### func [getSubPkgs](run.go#L67)
+### func [getSubPkgs](run.go#L76)
 
 getSubPkgs returns the sub packages of a package.
 baseDir is the root directory from which relative paths are calculated.
@@ -66,7 +45,7 @@ func init()
 
 ## Types
 
-### type [Config](types.go#L21)
+### type [Config](types.go#L22)
 
 Config is used to configure the documentation generation.
 
@@ -107,7 +86,7 @@ type Config struct {
 }
 ```
 
-### type [Gen](types.go#L57)
+### type [Gen](types.go#L58)
 
 Gen is used to generate documentation for a Go package.
 
@@ -118,7 +97,7 @@ type Gen struct {
 }
 ```
 
-#### func [New](types.go#L63)
+#### func [New](types.go#L64)
 
 New creates a new Gen instance.
 
@@ -126,7 +105,7 @@ New creates a new Gen instance.
 func New(c Config) *Gen
 ```
 
-#### func (*Gen) [Create](types.go#L68)
+#### func (*Gen) [Create](types.go#L69)
 
 Create is used to generate the documentation for a package.
 
@@ -134,13 +113,31 @@ Create is used to generate the documentation for a package.
 func (g *Gen) Create(name string, w io.Writer) error
 ```
 
-#### func (*Gen) [Run](types.go#L112)
+#### func (*Gen) [Run](types.go#L113)
 
 ```go
 func (g *Gen) Run(cmd *cobra.Command, args []string)
 ```
 
-#### func (*Gen) [get](types.go#L78)
+#### func (*Gen) [collectPkgs](types.go#L155)
+
+```go
+func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error)
+```
+
+#### func (*Gen) [generatePerPkgReadme](types.go#L248)
+
+```go
+func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
+```
+
+#### func (*Gen) [generateSummaryReadme](types.go#L311)
+
+```go
+func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
+```
+
+#### func (*Gen) [get](types.go#L79)
 
 get is used to get the package information.
 
