@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"fmt"
 	"go/doc"
 	"go/token"
 	"io"
@@ -76,20 +77,20 @@ func (g *Gen) Create(name string, w io.Writer) error {
 
 // get is used to get the package information.
 func (g *Gen) get(name string) (*common.Pkg, error) {
-	log.Infof("getting %s", name)
+	log.Infof("getting %s\n", name)
 	p, fset, err := docGet(name, g.config.Unexported)
 	if err != nil {
 		if strings.Contains(err.Error(), "no packages found") {
 			// Root directory has no Go files; proceed without a root package
 			p = &doc.Package{
-				Name:      "", // No name since it's not a package
+				Name:      "",
 				Doc:       "",
 				Filenames: []string{},
 			}
 			fset = token.NewFileSet()
-			log.Debugf("No Go files found in root directory: %s. Proceeding with sub-packages.", name)
+			log.Infof("No Go files found in root directory: %s. Proceeding with sub-packages.", name)
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("loading packages: %w", err) // Wrap non-nil errors
 		}
 	} else {
 		sort.Strings(p.Filenames)
@@ -100,7 +101,7 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 	if !g.config.SkipSubPkgs {
 		subPkgs, err := getSubPkgs(name, name, g.config.Unexported, g.config.Recursive, g.config.ExcludePaths)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("loading sub-packages: %w", err)
 		}
 
 		pk.SubPkgs = subPkgs
@@ -119,9 +120,27 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to get package information: %v\n", err)
 	}
 
-	// Generate per-package README.md files
+	// Collect all packages
 	allPackages := collectAllPkgs(pkg)
 
+	if len(allPackages) == 0 {
+		log.Infof("No Go packages found in the specified directory: %s. No documentation generated.", rootDir)
+		return
+	}
+
+	// Check if the root package has Go files
+	hasRootGoFiles := len(pkg.Package.Filenames) > 0
+
+	if hasRootGoFiles {
+		// Scenario 1: Root has Go files, generate per-package README.md
+		generatePerPkgReadme(allPackages, rootDir, g.config)
+	} else {
+		// Scenario 2: Root has no Go files, generate summary README.md
+		generateSummaryReadme(allPackages, rootDir, g.config)
+	}
+}
+
+func generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 10) // Limit concurrency to 10 goroutines
 
@@ -133,12 +152,13 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 			defer wg.Done()
 			defer func() { <-sem }() // Release the slot
 
-			// Determine the output directory based on the first file's directory
+			// Ensure the package has at least one file
 			if len(p.Package.Filenames) == 0 {
 				log.Errorf("No files found for package %s", p.Package.Name)
 				return
 			}
 
+			// Determine the output directory based on the first file's directory
 			firstFile := p.Package.Filenames[0]
 			pkgPath := filepath.Dir(firstFile)
 
@@ -160,8 +180,7 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 
 			// Optional: Check if README.md already exists and handle accordingly
 			if _, err := os.Stat(readmePath); err == nil {
-				// Overwrite without prompt or implement desired behavior
-				log.Warnf("overwriting existing README.md in %s", relPath)
+				log.Warnf("README.md already exists in %s. Skipping (use --force to overwrite).", relPath)
 			}
 
 			// Create or truncate the README.md file
@@ -175,7 +194,7 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 			defer file.Close()
 
 			// Generate the documentation and write to README.md
-			err = template.Execute(file, p, g.config)
+			err = template.Execute(file, p, cfg)
 			if err != nil {
 				log.Errorf("Failed to write documentation for %s: %v", p.Package.Name, err)
 				return
@@ -186,6 +205,70 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 	}
 
 	wg.Wait()
+}
+
+func generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
+	// Define the path for summary README.md
+	summaryPath := filepath.Join(rootDir, "README.md")
+	summaryPath = filepath.Clean(summaryPath)
+
+	// Optional: Check if README.md already exists and handle accordingly
+	if _, err := os.Stat(summaryPath); err == nil {
+		log.Warnf("Summary README.md already exists in %s. Skipping (use --force to overwrite).", summaryPath)
+	}
+
+	// Create or truncate the summary README.md file
+	file, err := os.Create(summaryPath)
+	if err != nil {
+		log.Errorf("Failed to create summary README.md in %s: %v", rootDir, err)
+		return
+	}
+	defer file.Close()
+
+	// Prepare data for the summary template
+	subPackages := make([]common.SubPkg, 0, len(allPackages))
+	for _, p := range allPackages {
+		// Extract relative path
+		relPath, err := filepath.Rel(rootDir, filepath.Dir(p.Package.Filenames[0]))
+		if err != nil {
+			relPath = filepath.Dir(p.Package.Filenames[0])
+		}
+		if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
+			relPath = "./" + relPath
+		}
+
+		// Prepare SubPkg with Path, Link, and Doc
+		subPkg := common.SubPkg{
+			Path:    relPath,
+			Package: p.Package,
+		}
+
+		subPackages = append(subPackages, subPkg)
+	}
+
+	summaryData := template.SummaryData{
+		SubPkgs: subPackages,
+	}
+
+	// Execute the summary template
+	err = template.Execute(file, &summaryData, cfg)
+	if err != nil {
+		log.Errorf("Failed to write summary documentation: %v", err)
+		return
+	}
+
+	// Compute the relative path from rootDir to summaryPath
+	relPath, err := filepath.Rel(rootDir, summaryPath)
+	if err != nil {
+		relPath = summaryPath
+	}
+
+	// Prepend "./" if the relative path does not start with ".." and is not absolute
+	if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
+		relPath = "./" + relPath
+	}
+
+	log.Infof("Generated summary README.md at %s", relPath)
 }
 
 // getArgs is used to get the arguments for the command.

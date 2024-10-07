@@ -53,16 +53,37 @@ var files embed.FS
 
 // Execute is used to execute the README.md template.
 func Execute(w io.Writer, data interface{}, cfg interface{}, options ...markdown.Option) error {
-	p, ok := data.(*common.Pkg)
-	if !ok {
-		return fmt.Errorf("invalid data type, expected *doc.Package got %T", data)
-	}
+	switch data.(type) {
+	case *common.Pkg:
+		p, ok := data.(*common.Pkg)
+		if !ok {
+			return fmt.Errorf("invalid data type, expected *doc.Package got %T", data)
+		}
 
-	templates, err := template.New("main.md.gotmpl").Funcs(funcs(cfg, p.FilesSet, options)).ParseFS(files, "*")
-	if err != nil {
-		return err
+		templates, err := template.New("main.md.gotmpl").Funcs(funcs(cfg, p.FilesSet, options)).ParseFS(files, "*")
+		if err != nil {
+			return err
+		}
+		return templates.Execute(&multiNewLineEliminator{w: w}, data)
+	case *SummaryData:
+		s, ok := data.(*SummaryData)
+		if !ok {
+			return fmt.Errorf("invalid data type, expected *SummaryData got %T", data)
+		}
+
+		templates, err := template.New("summary.md.gotmpl").Funcs(funcs(cfg, nil, options)).ParseFS(files, "summary.md.gotmpl")
+		if err != nil {
+			return err
+		}
+		return templates.Execute(&multiNewLineEliminator{w: w}, s)
+	default:
+		return fmt.Errorf("invalid data type, expected *doc.Package or *SummaryData got %T", data)
 	}
-	return templates.Execute(&multiNewLineEliminator{w: w}, data)
+}
+
+// SummaryData is used to store the data for the summary template.
+type SummaryData struct {
+	SubPkgs []common.SubPkg
 }
 
 func funcs(cfg interface{}, set *token.FileSet, options []markdown.Option) template.FuncMap {

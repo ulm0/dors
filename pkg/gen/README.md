@@ -4,7 +4,7 @@ Package gen provides a command to generate documentation for a Go package.
 
 ## Functions
 
-### func [collectAllPkgs](types.go#L206)
+### func [collectAllPkgs](types.go#L270)
 
 collectAllPackages gathers all packages and sub-packages into a slice.
 collectAllPackages recursively gathers all packages and sub-packages.
@@ -29,7 +29,19 @@ docGet returns the documentation for a package.
 func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
 ```
 
-### func [getArgs](types.go#L192)
+### func [generatePerPkgReadme](types.go#L139)
+
+```go
+func generatePerPkgReadme(allPkgs []*common.Pkg, rootDir string, cfg Config)
+```
+
+### func [generateSummaryReadme](types.go#L206)
+
+```go
+func generateSummaryReadme(allPkgs []*common.Pkg, rootDir string, cfg Config)
+```
+
+### func [getArgs](types.go#L256)
 
 getArgs is used to get the arguments for the command.
 

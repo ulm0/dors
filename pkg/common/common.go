@@ -18,3 +18,11 @@ type SubPkg struct {
 	Package  *doc.Package
 	FilesSet *token.FileSet
 }
+
+func (s SubPkg) Link() string {
+	return s.Path
+}
+
+func (s SubPkg) Doc() string {
+	return s.Package.Doc
+}

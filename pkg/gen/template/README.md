@@ -18,19 +18,19 @@ Execute is used to execute the README.md template.
 func Execute(w io.Writer, data interface{ ... }, options ...markdown.Option) error
 ```
 
-### func [filename](template.go#L127)
+### func [filename](template.go#L148)
 
 ```go
 func filename(fset *token.FileSet, pos token.Pos) string
 ```
 
-### func [fmtDeclaration](template.go#L199)
+### func [fmtDeclaration](template.go#L220)
 
 ```go
 func fmtDeclaration(fset *token.FileSet, decl *ast.GenDecl, spec ast.Spec) string
 ```
 
-### func [funcSignature](template.go#L144)
+### func [funcSignature](template.go#L165)
 
 Helper function to get the function or method signature as a string
 
@@ -38,19 +38,29 @@ Helper function to get the function or method signature as a string
 func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string
 ```
 
-### func [funcs](template.go#L68)
+### func [funcs](template.go#L89)
 
 ```go
 func funcs(cfg interface{ ... }, set *token.FileSet, options []markdown.Option) template.FuncMap
 ```
 
-### func [lineNumber](template.go#L135)
+### func [lineNumber](template.go#L156)
 
 ```go
 func lineNumber(fset *token.FileSet, pos token.Pos) int
 ```
 
 ## Types
+
+### type [SummaryData](template.go#L85)
+
+SummaryData is used to store the data for the summary template.
+
+```go
+type SummaryData struct {
+	SubPkgs []common.SubPkg
+}
+```
 
 ### type [multiNewLineEliminator](template.go#L24)
 

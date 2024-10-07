@@ -25,3 +25,15 @@ type SubPkg struct {
 	FilesSet	*token.FileSet
 }
 ```
+
+#### func (SubPkg) [Doc](common.go#L26)
+
+```go
+func (s SubPkg) Doc() string
+```
+
+#### func (SubPkg) [Link](common.go#L22)
+
+```go
+func (s SubPkg) Link() string
+```

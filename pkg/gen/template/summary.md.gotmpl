@@ -1,0 +1,7 @@
+# Docs
+
+## Sub Packages
+
+{{ range .SubPkgs }}
+* [{{ .Path }}]({{ .Link }}){{ if .Doc }}: {{ .Doc }}{{ end }}
+{{ end }}
