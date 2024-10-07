@@ -21,7 +21,6 @@ func init() {
 	rootCmd.AddCommand(genCmd)
 	genCmd.Flags().StringSliceVarP(&includeSections, "include-sections", "i", []string{"constants", "factories", "functions", "methods", "types", "variables"}, "A list of sections to include in the documentation.")
 	genCmd.Flags().StringSliceVarP(&cfg.ExcludePaths, "exclude-paths", "e", []string{}, "A list of folders to exclude from the documentation.")
-	genCmd.Flags().StringVarP(&cfg.Output, "output", "o", "", "Output path for the documentation. If empty the documentation is printed to stdout.")
 	genCmd.Flags().BoolVarP(&cfg.PrintSource, "print-source", "p", false, "Print source code for each symbol.")
 	genCmd.Flags().BoolVarP(&cfg.Recursive, "recursive", "r", true, "Read all files in the package and generate the documentation. It can be used in combination with include, and exclude.")
 	genCmd.Flags().BoolVarP(&cfg.RespectCase, "respect-case", "c", true, "Respect case when matching symbols.")
@@ -34,6 +33,6 @@ func init() {
 		cfg.IncludeSections = make([]string, len(includeSections))
 		copy(cfg.IncludeSections, includeSections)
 		docGen := gen.New(cfg)
-		docGen.Called()(cmd, args)
+		docGen.Run(cmd, args)
 	}
 }

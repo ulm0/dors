@@ -2,12 +2,16 @@ package gen
 
 import (
 	"io"
+	"os"
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
+	"sync"
+
+	"github.com/spf13/cobra"
 
 	"github.com/charmbracelet/log"
-	"github.com/spf13/cobra"
 	"github.com/ulm0/dors/pkg/common"
 	"github.com/ulm0/dors/pkg/gen/template"
 )
@@ -46,9 +50,6 @@ type Config struct {
 	SkipSubPkgs bool `json:"skipSubPkgs"`
 	// SkipExamples will omit the examples from the README.
 	SkipExamples bool `json:"skipExamples"`
-	// Output path for the documentation.
-	// if empty the documentation is printed to stdout.
-	Output string `json:"output"`
 }
 
 // Gen is used to generate documentation for a Go package.
@@ -132,13 +133,75 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 }
 
 // Called is used to generate the documentation for a package.
-func (g *Gen) Called() func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
-		err := g.Create(getArgs(args), cmd.OutOrStdout())
-		if err != nil {
-			log.Fatalf("Failed: %v\n", err)
-		}
+func (g *Gen) Run(cmd *cobra.Command, args []string) {
+	rootDir := getArgs(args)
+	log.Infof("generating documentation for %s\n", rootDir)
+
+	pkg, err := g.get(rootDir)
+	if err != nil {
+		log.Fatalf("Failed: %v\n", err)
 	}
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 10)
+
+	allPkgs := collectAllPkgs(pkg)
+	for _, p := range allPkgs {
+		// Determine the output directory for this package based on the first file
+		if len(p.Package.Filenames) == 0 {
+			log.Errorf("no files found for package %s", p.Package.Name)
+			continue
+		}
+
+		wg.Add(1)
+		sem <- struct{}{} // acquire a semaphore slot
+		go func(p *common.Pkg) {
+			defer wg.Done()
+			defer func() { <-sem }() // release the semaphore slot
+
+			firstFile := p.Package.Filenames[0]
+			pkgPath := filepath.Dir(firstFile)
+
+			readmePath := filepath.Join(pkgPath, "README.md")
+
+			// Compute the relative path from rootDir to readmePath
+			relPath, err := filepath.Rel(rootDir, readmePath)
+			if err != nil {
+				// Fallback to absolute path if relative path cannot be determined
+				relPath = readmePath
+			}
+
+			// Prepend "./" if the relative path does not start with ".."
+			if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
+				relPath = "./" + relPath
+			}
+
+			// Optional: Check if README.md already exists and handle accordingly
+			if _, err := os.Stat(readmePath); err == nil {
+				// Overwrite without prompt or implement desired behavior
+				log.Warnf("overwriting existing README.md in %s", relPath)
+			}
+
+			file, err := os.Create(readmePath)
+			if err != nil {
+				log.Errorf("failed: %v\n", err)
+				return // Skip to the next package
+			}
+
+			defer file.Close()
+
+			// Generate the documentation and write to README.md
+			err = template.Execute(file, p, g.config)
+			if err != nil {
+				log.Errorf("failed to write documentation for %s: %v", p.Package.Name, err)
+				return
+			}
+
+			log.Infof("Generated README.md for package %s at %s", p.Package.Name, relPath)
+		}(p)
+	}
+
+	wg.Wait()
 }
 
 // getArgs is used to get the arguments for the command.
@@ -152,4 +215,24 @@ func getArgs(args []string) string {
 		log.Fatal(err)
 	}
 	return path
+}
+
+// collectAllPackages gathers all packages and sub-packages into a slice.
+// collectAllPackages recursively gathers all packages and sub-packages.
+func collectAllPkgs(pkg *common.Pkg) []*common.Pkg {
+	var all []*common.Pkg
+	var collect func(p *common.Pkg)
+
+	collect = func(p *common.Pkg) {
+		all = append(all, p)
+		for _, subPkg := range p.SubPkgs {
+			collect(&common.Pkg{
+				Package:  subPkg.Package,
+				FilesSet: subPkg.FilesSet,
+			})
+		}
+	}
+
+	collect(pkg)
+	return all
 }
