@@ -113,34 +113,138 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 func (g *Gen) Run(cmd *cobra.Command, args []string) {
 	// Determine the root directory to start documentation generation
 	rootDir := getArgs(args)
+	log.Infof("Starting documentation generation for root directory: %s", rootDir)
 
-	// Get the main package (may be empty if root has no Go files)
-	pkg, err := g.get(rootDir)
+	// Use WalkDir to traverse directories and collect packages
+	pkgs, err := g.collectPkgs(rootDir)
 	if err != nil {
-		log.Fatalf("Failed to get package information: %v\n", err)
+		log.Fatalf("Failed to collect packages: %v", err)
 	}
 
-	// Collect all packages
-	allPackages := collectAllPkgs(pkg)
-
-	if len(allPackages) == 0 {
+	if len(pkgs) == 0 {
 		log.Infof("No Go packages found in the specified directory: %s. No documentation generated.", rootDir)
 		return
 	}
 
 	// Check if the root package has Go files
-	hasRootGoFiles := len(pkg.Package.Filenames) > 0
+	hasRootGoFiles := false
+	for _, p := range pkgs {
+		if p.Path == "./" || p.Path == "." || p.Path == "" {
+			if len(p.Package.Filenames) > 0 {
+				hasRootGoFiles = true
+				break
+			}
+		}
+	}
 
-	if hasRootGoFiles {
-		// Scenario 1: Root has Go files, generate per-package README.md
-		generatePerPkgReadme(allPackages, rootDir, g.config)
+	log.Infof("Root has Go files: %v", hasRootGoFiles)
+
+	// Always generate per-package README.md files
+	log.Infof("Generating per-package README.md files.")
+	g.generatePerPkgReadme(pkgs, rootDir, g.config)
+
+	// Conditionally generate summary README.md if root lacks Go files
+	if !hasRootGoFiles {
+		log.Infof("Generating summary README.md.")
+		g.generateSummaryReadme(pkgs, rootDir, g.config)
 	} else {
-		// Scenario 2: Root has no Go files, generate summary README.md
-		generateSummaryReadme(allPackages, rootDir, g.config)
+		log.Infof("Root has Go files. Skipping summary README.md generation.")
 	}
 }
 
-func generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
+func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
+	var pkgs []*common.Pkg
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	// WalkDir function
+	walkFn := func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			log.Errorf("Error accessing path %s: %v", path, err)
+			return nil // Continue walking
+		}
+
+		// Skip excluded paths
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			log.Errorf("Failed to get relative path for %s: %v", path, err)
+			return nil // Continue walking
+		}
+		relPath = filepath.ToSlash(relPath)
+
+		for _, excludePath := range g.config.ExcludePaths {
+			excludePath = filepath.ToSlash(filepath.Clean(excludePath))
+			if relPath == excludePath || strings.HasPrefix(relPath, excludePath+"/") {
+				log.Infof("Skipping excluded path: %s", relPath)
+				return filepath.SkipDir
+			}
+		}
+
+		// Skip hidden directories
+		if d.IsDir() && strings.HasPrefix(d.Name(), ".") {
+			log.Infof("Skipping hidden directory: %s", path)
+			return filepath.SkipDir
+		}
+
+		if d.IsDir() {
+			// Check if the directory contains Go files
+			hasGoFiles, err := containsGoFiles(path)
+			if err != nil {
+				log.Errorf("Failed checking for Go files in %s: %v", path, err)
+				return nil // Continue walking
+			}
+
+			if hasGoFiles {
+				wg.Add(1)
+				go func(dir string) {
+					defer wg.Done()
+
+					pk, fs, err := docGet(dir, g.config.Unexported)
+					if err != nil {
+						log.Errorf("Failed loading documentation for %s: %v", dir, err)
+						return
+					}
+
+					mu.Lock()
+					defer mu.Unlock()
+					// Determine the package path relative to rootDir
+					packagePath, err := filepath.Rel(rootDir, dir)
+					if err != nil {
+						packagePath = dir // Fallback to absolute path
+					}
+					packagePath = filepath.ToSlash(packagePath)
+					if packagePath == "." {
+						packagePath = "./" // Represent root as "./"
+					} else {
+						packagePath = "./" + packagePath // Prepend "./" for consistency
+					}
+					pkgs = append(pkgs, &common.Pkg{
+						Package:  pk,
+						FilesSet: fs,
+						SubPkgs:  nil, // Not handling nested subpackages here
+						Path:     packagePath,
+					})
+					log.Infof("Loaded package: %s", packagePath)
+				}(path)
+			}
+		}
+
+		return nil
+	}
+
+	// Start walking the directory tree
+	err := filepath.WalkDir(rootDir, walkFn)
+	if err != nil {
+		return nil, fmt.Errorf("error walking the path %s: %w", rootDir, err)
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+
+	return pkgs, nil
+}
+
+func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 10) // Limit concurrency to 10 goroutines
 
@@ -158,29 +262,16 @@ func generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 				return
 			}
 
-			// Determine the output directory based on the first file's directory
-			firstFile := p.Package.Filenames[0]
-			pkgPath := filepath.Dir(firstFile)
+			// Determine the output directory based on the package path
+			pkgPath := filepath.Join(rootDir, p.Path)
 
 			// Define the path for README.md
 			readmePath := filepath.Join(pkgPath, "README.md")
 			readmePath = filepath.Clean(readmePath) // Clean the path
 
-			// Compute the relative path from rootDir to readmePath
-			relPath, err := filepath.Rel(rootDir, readmePath)
-			if err != nil {
-				// Fallback to absolute path if relative path cannot be determined
-				relPath = readmePath
-			}
-
-			// Prepend "./" if the relative path does not start with ".." and is not absolute
-			if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
-				relPath = "./" + relPath
-			}
-
 			// Optional: Check if README.md already exists and handle accordingly
 			if _, err := os.Stat(readmePath); err == nil {
-				log.Warnf("README.md already exists in %s. Skipping (use --force to overwrite).", relPath)
+				log.Warnf("README.md already exists in %s. Overwriting.", readmePath)
 			}
 
 			// Create or truncate the README.md file
@@ -189,8 +280,6 @@ func generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 				log.Errorf("Failed to create README.md in %s: %v", pkgPath, err)
 				return
 			}
-
-			// Ensure the file is closed after writing
 			defer file.Close()
 
 			// Generate the documentation and write to README.md
@@ -200,6 +289,17 @@ func generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 				return
 			}
 
+			// Compute the relative path from rootDir to readmePath
+			relPath, err := filepath.Rel(rootDir, readmePath)
+			if err != nil {
+				relPath = readmePath
+			}
+
+			// Prepend "./" if the relative path does not start with ".." and is not absolute
+			if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
+				relPath = "./" + relPath
+			}
+
 			log.Infof("Generated README.md for package %s at %s", p.Package.Name, relPath)
 		}(p)
 	}
@@ -207,14 +307,14 @@ func generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 	wg.Wait()
 }
 
-func generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
+func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
 	// Define the path for summary README.md
 	summaryPath := filepath.Join(rootDir, "README.md")
 	summaryPath = filepath.Clean(summaryPath)
 
 	// Optional: Check if README.md already exists and handle accordingly
 	if _, err := os.Stat(summaryPath); err == nil {
-		log.Warnf("Summary README.md already exists in %s. Skipping (use --force to overwrite).", summaryPath)
+		log.Warnf("Summary README.md already exists in %s. Overwriting.", summaryPath)
 	}
 
 	// Create or truncate the summary README.md file
@@ -228,21 +328,16 @@ func generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config
 	// Prepare data for the summary template
 	subPackages := make([]common.SubPkg, 0, len(allPackages))
 	for _, p := range allPackages {
-		// Extract relative path
-		relPath, err := filepath.Rel(rootDir, filepath.Dir(p.Package.Filenames[0]))
-		if err != nil {
-			relPath = filepath.Dir(p.Package.Filenames[0])
-		}
-		if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
-			relPath = "./" + relPath
+		// Exclude the root package if it has no Go files
+		if p.Path == "./" && len(p.Package.Filenames) == 0 {
+			continue
 		}
 
 		// Prepare SubPkg with Path, Link, and Doc
 		subPkg := common.SubPkg{
-			Path:    relPath,
+			Path:    p.Path,
 			Package: p.Package,
 		}
-
 		subPackages = append(subPackages, subPkg)
 	}
 
@@ -257,52 +352,27 @@ func generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config
 		return
 	}
 
-	// Compute the relative path from rootDir to summaryPath
-	relPath, err := filepath.Rel(rootDir, summaryPath)
-	if err != nil {
-		relPath = summaryPath
-	}
-
-	// Prepend "./" if the relative path does not start with ".." and is not absolute
-	if !strings.HasPrefix(relPath, "..") && !filepath.IsAbs(relPath) {
-		relPath = "./" + relPath
-	}
-
-	log.Infof("Generated summary README.md at %s", relPath)
+	log.Infof("Generated summary README.md at %s", summaryPath)
 }
 
 // getArgs is used to get the arguments for the command.
 func getArgs(args []string) string {
+	var path string
 	if len(args) > 0 {
-		return args[0]
+		path = args[0]
+	} else {
+		var err error
+		path, err = os.Getwd()
+		if err != nil {
+			log.Fatalf("Failed to get current working directory: %v", err)
+		}
 	}
 
-	path, err := filepath.Abs("./")
+	absPath, err := filepath.Abs(path)
 	if err != nil {
-		log.Fatal(err)
-	}
-	return path
-}
-
-// collectAllPackages gathers all packages and sub-packages into a slice.
-// collectAllPackages recursively gathers all packages and sub-packages.
-func collectAllPkgs(pkg *common.Pkg) []*common.Pkg {
-	var all []*common.Pkg
-	var collect func(p *common.Pkg)
-
-	collect = func(p *common.Pkg) {
-		// Include only packages that have Go files
-		if len(p.Package.Filenames) > 0 {
-			all = append(all, p)
-		}
-		for _, subPkg := range p.SubPkgs {
-			collect(&common.Pkg{
-				Package:  subPkg.Package,
-				FilesSet: subPkg.FilesSet,
-			})
-		}
+		log.Fatalf("Failed to get absolute path for %s: %v", path, err)
 	}
 
-	collect(pkg)
-	return all
+	log.Infof("Using root directory: %s", absPath)
+	return absPath
 }

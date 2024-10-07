@@ -10,6 +10,7 @@ type Pkg struct {
 	Package  *doc.Package
 	FilesSet *token.FileSet
 	SubPkgs  []SubPkg
+	Path     string
 }
 
 // SubPkg is used to store the sub package information.

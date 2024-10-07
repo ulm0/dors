@@ -18,7 +18,9 @@ func init() {
 }
 
 // docGet returns the documentation for a package.
-func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.FileSet, error) {
+func docGet(dir string, includeUnexported bool) (*doc.Package, *token.FileSet, error) {
+	log.Infof("Loading documentation for directory: %s", dir)
+
 	var loadMode packages.LoadMode = packages.NeedName |
 		packages.NeedFiles |
 		packages.NeedSyntax |
@@ -30,24 +32,29 @@ func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.Fil
 
 	cfg := &packages.Config{
 		Mode:  loadMode,
-		Dir:   importPath,
+		Dir:   dir,
 		Tests: false,
 	}
 
-	pkgs, err := packages.Load(cfg, importPath)
+	// Use "./" to load the package in the specified directory
+	pkgs, err := packages.Load(cfg, "./")
 	if err != nil {
+		log.Errorf("Error loading package in %s: %v", dir, err)
 		return nil, nil, fmt.Errorf("loading package: %w", err)
 	}
 
 	if packages.PrintErrors(pkgs) > 0 {
+		log.Errorf("Packages contain errors in %s", dir)
 		return nil, nil, fmt.Errorf("loading packages: %w", err)
 	}
 
 	if len(pkgs) == 0 {
-		return nil, nil, fmt.Errorf("no packages found in %s", importPath)
+		log.Errorf("No packages found in directory: %s", dir)
+		return nil, nil, fmt.Errorf("no packages found in %s", dir)
 	}
 
 	pk := pkgs[0]
+	log.Infof("Successfully loaded package: %s", pk.Name)
 
 	var docMode doc.Mode
 	if includeUnexported {
@@ -56,9 +63,11 @@ func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.Fil
 
 	docPkg, err := doc.NewFromFiles(pk.Fset, pk.Syntax, pk.Name, docMode)
 	if err != nil {
+		log.Errorf("Error creating documentation for package %s: %v", pk.Name, err)
 		return nil, nil, fmt.Errorf("failed creating documentation: %w", err)
 	}
 
+	log.Infof("Documentation created for package: %s", pk.Name)
 	return docPkg, pk.Fset, nil
 }
 
@@ -77,7 +86,8 @@ func getSubPkgs(baseDir string, dir string, includeUnexported bool, recursive bo
 			subDir := filepath.Join(dir, entry.Name())
 			relPath, err := filepath.Rel(baseDir, subDir)
 			if err != nil {
-				return nil, fmt.Errorf("failed getting relative path: %w", err)
+				log.Errorf("failed getting relative path for %s: %v", subDir, err)
+				continue // Skip this subdirectory
 			}
 
 			// Normalize the relative path for consistent comparison
@@ -96,34 +106,39 @@ func getSubPkgs(baseDir string, dir string, includeUnexported bool, recursive bo
 			}
 
 			if excluded {
-				log.Infof("skipping path: %s\n", relPath)
+				log.Infof("Skipping excluded path: %s", relPath)
 				continue
 			}
 
 			// Skip hidden directories
 			if strings.HasPrefix(entry.Name(), ".") {
+				log.Infof("Skipping hidden directory: %s", subDir)
 				continue
 			}
 
 			// Check if the directory contains Go files
 			hasGoFiles, err := containsGoFiles(subDir)
 			if err != nil {
-				return nil, fmt.Errorf("failed checking for go files in %s: %w", subDir, err)
+				log.Errorf("failed checking for Go files in %s: %v", subDir, err)
+				continue // Skip this subdirectory
 			}
 
 			if hasGoFiles {
 				pk, fs, err := docGet(subDir, includeUnexported)
 				if err != nil {
-					return nil, fmt.Errorf("failed getting %s: %w", subDir, err)
+					log.Errorf("failed loading documentation for %s: %v", subDir, err)
+					continue // Skip this subdirectory
 				}
 
 				subPkgs = append(subPkgs, common.SubPkg{Path: relPath, Package: pk, FilesSet: fs})
+				log.Infof("Loaded package: %s", relPath)
 			}
 
 			if recursive {
 				childSubPkgs, err := getSubPkgs(baseDir, subDir, includeUnexported, recursive, excludePaths)
 				if err != nil {
-					return nil, fmt.Errorf("failed getting sub packages in %s: %w", subDir, err)
+					log.Errorf("failed getting sub packages in %s: %v", subDir, err)
+					continue // Continue with other subdirectories
 				}
 				subPkgs = append(subPkgs, childSubPkgs...)
 			}
