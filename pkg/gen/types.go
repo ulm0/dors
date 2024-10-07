@@ -1,7 +1,6 @@
 package gen
 
 import (
-	"encoding/json"
 	"io"
 	"path/filepath"
 	"slices"
@@ -48,8 +47,6 @@ type Config struct {
 	// Output path for the documentation.
 	// if empty the documentation is printed to stdout.
 	Output string `json:"output"`
-	// Verbosity level.
-	Verbose bool `json:"verbose"`
 }
 
 // Gen is used to generate documentation for a Go package.
@@ -127,11 +124,6 @@ func (g *Gen) get(name string) (*common.Pkg, error) {
 		}
 
 		pk.SubPkgs = subPkgs
-	}
-
-	if g.config.Verbose {
-		d, _ := json.MarshalIndent(p, "  ", "  ")
-		log.Debugf("package: %s\n", string(d))
 	}
 
 	return pk, nil

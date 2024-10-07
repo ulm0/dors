@@ -29,7 +29,6 @@ func init() {
 	genCmd.Flags().BoolVarP(&cfg.SkipSubPkgs, "skip-sub-pkgs", "k", false, "SkipSubPackages will omit the sub packages section from the README.")
 	genCmd.Flags().StringVarP(&cfg.Title, "title", "t", "", "Title for the documentation, if empty the package name is used.")
 	genCmd.Flags().BoolVarP(&cfg.Unexported, "unexported", "u", false, "Include unexported symbols.")
-	genCmd.Flags().BoolVarP(&cfg.Verbose, "verbose", "v", false, "Increase verbosity.")
 
 	genCmd.Run = func(cmd *cobra.Command, args []string) {
 		cfg.IncludeSections = make([]string, len(includeSections))
