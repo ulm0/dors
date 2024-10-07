@@ -118,6 +118,9 @@ func funcs(cfg interface{}, set *token.FileSet, options []markdown.Option) templ
 		"fmtDeclaration": func(decl *ast.GenDecl, spec ast.Spec) string {
 			return fmtDeclaration(set, decl, spec)
 		},
+		"basename": func(p string) string {
+			return filepath.Base(p)
+		},
 	}
 }
 

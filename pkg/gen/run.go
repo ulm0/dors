@@ -64,7 +64,8 @@ func docGet(importPath string, includeUnexported bool) (*doc.Package, *token.Fil
 }
 
 // getSubPkgs returns the sub packages of a package.
-func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths []string) ([]common.SubPkg, error) {
+// baseDir is the root directory from which relative paths are calculated.
+func getSubPkgs(baseDir string, dir string, includeUnexported bool, recursive bool, excludePaths []string) ([]common.SubPkg, error) {
 	var subPkgs []common.SubPkg
 
 	entries, err := os.ReadDir(dir)
@@ -75,19 +76,22 @@ func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths
 	for _, entry := range entries {
 		if entry.IsDir() {
 			subDir := filepath.Join(dir, entry.Name())
-			relPath, err := filepath.Rel(dir, subDir)
+			relPath, err := filepath.Rel(baseDir, subDir)
 			if err != nil {
 				return nil, fmt.Errorf("failed getting relative path: %w", err)
 			}
 
+			// Check if the relative path is in the excludePaths
 			if slices.Contains(excludePaths, relPath) {
 				continue
 			}
 
+			// Skip hidden directories
 			if strings.HasPrefix(entry.Name(), ".") {
 				continue
 			}
 
+			// Check if the directory contains Go files
 			hasGoFiles, err := containsGoFiles(subDir)
 			if err != nil {
 				return nil, fmt.Errorf("failed checking for go files in %s: %w", subDir, err)
@@ -99,15 +103,11 @@ func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths
 					return nil, fmt.Errorf("failed getting %s: %w", subDir, err)
 				}
 
-				relPath, err := filepath.Rel(dir, subDir)
-				if err != nil {
-					return nil, fmt.Errorf("failed getting relative path: %w", err)
-				}
 				subPkgs = append(subPkgs, common.SubPkg{Path: relPath, Package: pk, FilesSet: fs})
 			}
 
 			if recursive {
-				childSubPkgs, err := getSubPkgs(subDir, includeUnexported, recursive, excludePaths)
+				childSubPkgs, err := getSubPkgs(baseDir, subDir, includeUnexported, recursive, excludePaths)
 				if err != nil {
 					return nil, fmt.Errorf("failed getting sub packages in %s: %w", subDir, err)
 				}
