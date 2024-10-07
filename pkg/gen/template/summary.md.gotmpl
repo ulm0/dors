@@ -1,0 +1,11 @@
+# Project Documentation
+
+## Sub Packages
+
+{{ if .SubPkgs }}
+{{ range .SubPkgs }}
+* [{{ .Path }}]({{ .Path }}/README.md){{ if .Doc }}: {{ .Doc }}{{ end }}
+{{ end }}
+{{ else }}
+No sub-packages found.
+{{ end }}
