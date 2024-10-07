@@ -9,11 +9,9 @@ import (
 	"slices"
 	"strings"
 
-	"golang.org/x/tools/go/packages"
-
-	"github.com/ulm0/dors/pkg/common"
-
 	"github.com/charmbracelet/log"
+	"github.com/ulm0/dors/pkg/common"
+	"golang.org/x/tools/go/packages"
 )
 
 func init() {
@@ -96,12 +94,16 @@ func getSubPkgs(dir string, includeUnexported bool, recursive bool, excludePaths
 			}
 
 			if hasGoFiles {
-				pk, _, err := docGet(subDir, includeUnexported)
+				pk, fs, err := docGet(subDir, includeUnexported)
 				if err != nil {
 					return nil, fmt.Errorf("failed getting %s: %w", subDir, err)
 				}
 
-				subPkgs = append(subPkgs, common.SubPkg{Path: subDir, Package: pk})
+				relPath, err := filepath.Rel(dir, subDir)
+				if err != nil {
+					return nil, fmt.Errorf("failed getting relative path: %w", err)
+				}
+				subPkgs = append(subPkgs, common.SubPkg{Path: relPath, Package: pk, FilesSet: fs})
 			}
 
 			if recursive {

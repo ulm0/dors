@@ -2,6 +2,10 @@
 
 {{ doc .Package.Doc }}
 
+{{ if (not config.SkipSubPkgs) }}
+{{ template "subpackages" . }}
+{{ end }}
+
 {{ if (hasSection config.IncludeSections "constants") }}
 {{ template "consts" .Package.Consts }}
 {{ end }}

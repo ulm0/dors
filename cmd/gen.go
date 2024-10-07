@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"net/http"
-
 	"github.com/ulm0/dors/pkg/gen"
 
 	"github.com/spf13/cobra"
@@ -36,8 +34,7 @@ func init() {
 	genCmd.Run = func(cmd *cobra.Command, args []string) {
 		cfg.IncludeSections = make([]string, len(includeSections))
 		copy(cfg.IncludeSections, includeSections)
-		client := http.DefaultClient
-		docGen := gen.New(client).WithConfig(cfg)
+		docGen := gen.New(cfg)
 		docGen.Called()(cmd, args)
 	}
 }

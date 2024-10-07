@@ -3,17 +3,14 @@ package gen
 import (
 	"encoding/json"
 	"io"
-	"net/http"
 	"path/filepath"
 	"slices"
 	"sort"
 
-	"github.com/ulm0/dors/pkg/common"
-
-	"github.com/spf13/cobra"
-	"github.com/ulm0/dors/pkg/gen/template"
-
 	"github.com/charmbracelet/log"
+	"github.com/spf13/cobra"
+	"github.com/ulm0/dors/pkg/common"
+	"github.com/ulm0/dors/pkg/gen/template"
 )
 
 // Config is used to configure the documentation generation.
@@ -57,19 +54,13 @@ type Config struct {
 
 // Gen is used to generate documentation for a Go package.
 type Gen struct {
-	client *http.Client
+	// client *http.Client
 	config Config
 }
 
 // New creates a new Gen instance.
-func New(c *http.Client) *Gen {
-	return &Gen{client: c}
-}
-
-// WithConfig is used to set the configuration for the Gen instance.
-func (g *Gen) WithConfig(c Config) *Gen {
-	g.config = c
-	return g
+func New(c Config) *Gen {
+	return &Gen{config: c}
 }
 
 // Create is used to generate the documentation for a package.

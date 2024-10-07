@@ -1,10 +1,10 @@
 {{ define "subpackages" }}
-{{ if .SubPackages }}
+{{ if .SubPkgs }}
 
 ## Sub Packages
 
-{{ range .SubPackages }}
-* [{{.Path}}](./{{.Path}}){{if .Package.Synopsis}}: {{.Package.Synopsis}}{{end}}
+{{ range .SubPkgs }}
+* [{{.Path}}](./{{.Path}}){{if .Package.Doc}}: {{.Package.Doc}}{{end}}
 {{ end }}
 
 {{ end }}
