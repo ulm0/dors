@@ -2,7 +2,7 @@
 
 ## Types
 
-### type [Pkg](common.go#L9)
+### type [`Pkg`](common.go#L9)
 
 ```go
 type Pkg struct {
@@ -16,13 +16,13 @@ type Pkg struct {
 
 Pkg is used to store the package information.
 
-#### func (*Pkg) [Doc](common.go#L21)
+#### func [`(*Pkg) Doc`](common.go#L21)
 
 ```go
 func (p *Pkg) Doc() string
 ```
 
-#### func (*Pkg) [Link](common.go#L17)
+#### func [`(*Pkg) Link`](common.go#L17)
 
 ```go
 func (p *Pkg) Link() string

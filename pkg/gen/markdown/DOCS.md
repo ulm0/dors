@@ -13,7 +13,7 @@ const (
 
 ## Variables
 
-### var [matchRx](comment.go#L135)
+### var [`matchRx`](comment.go#L135)
 
 ```go
 var matchRx = regexp.MustCompile(`(` + urlTitle + `((` + urlRx + `)|(` + localRx + `)))|(` + identRx + `)`)
@@ -21,7 +21,7 @@ var matchRx = regexp.MustCompile(`(` + urlTitle + `((` + urlRx + `)|(` + localRx
 
 ## Functions
 
-### func [ToMarkdown](comment.go#L42)
+### func [`ToMarkdown`](comment.go#L42)
 
 ```go
 func ToMarkdown(w io.Writer, text string, opts ...Option)
@@ -46,13 +46,13 @@ URLs in the comment text are converted into links; if the URL also appears
 in the words map, the link is taken from the map (if the corresponding map
 value is the empty string, the URL is not converted into a link).
 
-### func [commonPrefix](comment.go#L280)
+### func [`commonPrefix`](comment.go#L280)
 
 ```go
 func commonPrefix(a, b string) string
 ```
 
-### func [diffCharIdx](comment.go#L470)
+### func [`diffCharIdx`](comment.go#L470)
 
 ```go
 func diffCharIdx(line string) int
@@ -60,7 +60,7 @@ func diffCharIdx(line string) int
 
 diffCharIdx returns the index of a diff character, given the first line of a code block.
 
-### func [emphasize](comment.go#L166)
+### func [`emphasize`](comment.go#L166)
 
 ```go
 func emphasize(w io.Writer, line string, words map[string]string, nice bool)
@@ -73,7 +73,7 @@ into a link). Go identifiers that appear in the words map are italicized; if
 the corresponding map value is not the empty string, it is considered a URL
 and the word is converted into a link.
 
-### func [heading](comment.go#L312)
+### func [`heading`](comment.go#L312)
 
 ```go
 func heading(line string) string
@@ -82,19 +82,19 @@ func heading(line string) string
 heading returns the trimmed line if it passes as a section heading;
 otherwise it returns the empty string.
 
-### func [indentLen](comment.go#L268)
+### func [`indentLen`](comment.go#L268)
 
 ```go
 func indentLen(s string) int
 ```
 
-### func [isBlank](comment.go#L276)
+### func [`isBlank`](comment.go#L276)
 
 ```go
 func isBlank(s string) bool
 ```
 
-### func [isDiffLine](comment.go#L488)
+### func [`isDiffLine`](comment.go#L488)
 
 ```go
 func isDiffLine(line string, i int) bool
@@ -102,7 +102,7 @@ func isDiffLine(line string, i int) bool
 
 isDiffLine returns if the character at i is a '+' or a '-' sign.
 
-### func [isValidDiffLine](comment.go#L480)
+### func [`isValidDiffLine`](comment.go#L480)
 
 ```go
 func isValidDiffLine(line string, i int) bool
@@ -111,7 +111,7 @@ func isValidDiffLine(line string, i int) bool
 isDiffLine returns if this is a valid diff line given a code block line, and the expected index
 for the diff character.
 
-### func [pairedParensPrefixLen](comment.go#L138)
+### func [`pairedParensPrefixLen`](comment.go#L138)
 
 ```go
 func pairedParensPrefixLen(s string) int
@@ -119,7 +119,7 @@ func pairedParensPrefixLen(s string) int
 
 pairedParensPrefixLen returns the length of the longest prefix of s containing paired parentheses.
 
-### func [unindent](comment.go#L288)
+### func [`unindent`](comment.go#L288)
 
 ```go
 func unindent(block []string)
@@ -127,7 +127,7 @@ func unindent(block []string)
 
 ## Types
 
-### type [Option](comment.go#L85)
+### type [`Option`](comment.go#L85)
 
 ```go
 type Option func(*options)
@@ -160,7 +160,7 @@ Go identifiers that appear in the words map are italicized; if the corresponding
 map value is not the empty string, it is considered a URL and the word is converted
 into a link.
 
-### type [block](comment.go#L370)
+### type [`block`](comment.go#L370)
 
 ```go
 type block struct {
@@ -177,7 +177,7 @@ type block struct {
 func blocks(text string, skipDiffs bool) []block
 ```
 
-### type [op](comment.go#L362)
+### type [`op`](comment.go#L362)
 
 ```go
 type op int
@@ -185,7 +185,7 @@ type op int
 
 #### Constants
 
-##### const [opPara](comment.go#L364)
+##### const [`opPara`](comment.go#L364)
 
 ```go
 const (
@@ -193,7 +193,7 @@ const (
 )
 ```
 
-### type [options](comment.go#L104)
+### type [`options`](comment.go#L104)
 
 ```go
 type options struct {

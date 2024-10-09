@@ -4,7 +4,7 @@ Package gen provides a command to generate documentation for a Go package.
 
 ## Functions
 
-### func [containsGoFiles](run.go#L73)
+### func [`containsGoFiles`](run.go#L73)
 
 ```go
 func containsGoFiles(dir string) (bool, error)
@@ -12,7 +12,7 @@ func containsGoFiles(dir string) (bool, error)
 
 containsGoFiles checks if a directory contains go files.
 
-### func [getArgs](types.go#L322)
+### func [`getArgs`](types.go#L322)
 
 ```go
 func getArgs(args []string) string
@@ -20,13 +20,13 @@ func getArgs(args []string) string
 
 getArgs is used to get the arguments for the command.
 
-### func [init](run.go#L14)
+### func [`init`](run.go#L14)
 
 ```go
 func init()
 ```
 
-### func [loadPackages](run.go#L19)
+### func [`loadPackages`](run.go#L19)
 
 ```go
 func loadPackages(dir string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
@@ -36,7 +36,7 @@ loadPackages returns the documentation for a package.
 
 ## Types
 
-### type [Config](types.go#L19)
+### type [`Config`](types.go#L19)
 
 ```go
 type Config struct {
@@ -77,7 +77,7 @@ type Config struct {
 
 Config is used to configure the documentation generation.
 
-### type [Gen](types.go#L55)
+### type [`Gen`](types.go#L55)
 
 ```go
 type Gen struct {
@@ -95,25 +95,25 @@ func New(c Config) *Gen
 
 New creates a new Gen instance.
 
-#### func (*Gen) [Run](types.go#L64)
+#### func [`(*Gen) Run`](types.go#L64)
 
 ```go
 func (g *Gen) Run(cmd *cobra.Command, args []string)
 ```
 
-#### func (*Gen) [collectPkgs](types.go#L101)
+#### func [`(*Gen) collectPkgs`](types.go#L101)
 
 ```go
 func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error)
 ```
 
-#### func (*Gen) [generatePerPkgReadme](types.go#L206)
+#### func [`(*Gen) generatePerPkgReadme`](types.go#L206)
 
 ```go
 func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 ```
 
-#### func (*Gen) [generateSummaryReadme](types.go#L272)
+#### func [`(*Gen) generateSummaryReadme`](types.go#L272)
 
 ```go
 func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config)

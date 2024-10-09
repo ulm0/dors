@@ -2,7 +2,7 @@
 
 ## Variables
 
-### var [cfg](gen.go#L9)
+### var [`cfg`](gen.go#L9)
 
 ```go
 var (
@@ -10,7 +10,7 @@ var (
 )
 ```
 
-### var [genCmd](gen.go#L15)
+### var [`genCmd`](gen.go#L15)
 
 genCmd represents the gen command
 
@@ -21,7 +21,7 @@ var genCmd = &cobra.Command{
 }
 ```
 
-### var [rootCmd](root.go#L10)
+### var [`rootCmd`](root.go#L10)
 
 rootCmd represents the base command when called without any subcommands
 
@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 
 ## Functions
 
-### func [Execute](root.go#L26)
+### func [`Execute`](root.go#L26)
 
 ```go
 func Execute()
@@ -43,7 +43,7 @@ func Execute()
 Execute adds all child commands to the root command and sets flags appropriately.
 This is called by main.main(). It only needs to happen once to the rootCmd.
 
-### func [init](gen.go#L20)
+### func [`init`](gen.go#L20)
 
 ```go
 func init()

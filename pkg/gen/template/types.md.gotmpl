@@ -5,7 +5,7 @@
 
 {{ range .Types }}
 
-### type [{{ .Name }}]({{ filename .Decl.TokPos }}#L{{ lineNumber .Decl.TokPos }})
+### type [{{ inlineCode .Name }}]({{ filename .Decl.TokPos }}#L{{ lineNumber .Decl.TokPos }})
 
 {{ gocode (fmtDeclaration .Decl (index .Decl.Specs 0)) }}
 
@@ -41,7 +41,7 @@
 {{/* Iterate methods */}}
 {{ range .Methods }}
 
-#### func ({{ .Recv }}) [{{ .Name }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
+#### func [{{ inlineCode (printf "(%s) %s" .Recv .Name) }}]({{ filename .Decl.Type.Func }}#L{{ lineNumber .Decl.Type.Func }})
 
 {{ gocodeEllipsis (funcSignature .Decl) }}
 
