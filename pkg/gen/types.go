@@ -72,7 +72,7 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 	}
 
 	if len(pkgs) == 0 {
-		log.Infof("No Go packages found in the specified directory: %s. No documentation generated.", rootDir)
+		log.Infof("no Go packages found in the specified directory: %s. no documentation generated.", rootDir)
 		return
 	}
 
@@ -87,13 +87,13 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	log.Infof("Root has Go files: %v", hasRootGoFiles)
+	log.Infof("root has Go files: %v", hasRootGoFiles)
 
 	// Always generate per-package README.md files
-	log.Infof("Generating per-package README.md files.")
+	log.Infof("generating per-package README.md files.")
 	g.generatePerPkgReadme(pkgs, rootDir, g.config)
 
-	log.Infof("Generating summary README.md.")
+	log.Infof("generating summary README.md.")
 	g.generateSummaryReadme(pkgs, rootDir, g.config)
 }
 
@@ -270,7 +270,7 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 	defer file.Close()
 
 	// Prepare data for the summary template
-	subPackages := make([]common.SubPkg, 0, len(allPackages))
+	subPackages := make([]*common.Pkg, 0, len(allPackages))
 	for _, p := range allPackages {
 		// Exclude the root package if it has Go files
 		if p.Path == "" && len(p.Package.Filenames) > 0 {
@@ -278,7 +278,7 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 		}
 
 		// Prepare SubPkg with Path, Link, and Doc
-		subPkg := common.SubPkg{
+		subPkg := &common.Pkg{
 			Path:    p.Path,
 			Package: p.Package,
 		}

@@ -8,33 +8,15 @@
 type Pkg struct {
 	Package		*doc.Package
 	FilesSet	*token.FileSet
-	SubPkgs		[]SubPkg
+	SubPkgs		[]*Pkg
 	Path		string
 }
 ```
 
 Pkg is used to store the package information.
 
-### type [SubPkg](common.go#L17)
+#### func (*Pkg) [Doc](common.go#L20)
 
 ```go
-type SubPkg struct {
-	Path		string
-	Package		*doc.Package
-	FilesSet	*token.FileSet
-}
-```
-
-SubPkg is used to store the sub package information.
-
-#### func (SubPkg) [Doc](common.go#L27)
-
-```go
-func (s SubPkg) Doc() string
-```
-
-#### func (SubPkg) [Link](common.go#L23)
-
-```go
-func (s SubPkg) Link() string
+func (s *Pkg) Doc() string
 ```

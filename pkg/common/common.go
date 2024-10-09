@@ -9,21 +9,14 @@ import (
 type Pkg struct {
 	Package  *doc.Package
 	FilesSet *token.FileSet
-	SubPkgs  []SubPkg
+	SubPkgs  []*Pkg
 	Path     string
 }
 
-// SubPkg is used to store the sub package information.
-type SubPkg struct {
-	Path     string
-	Package  *doc.Package
-	FilesSet *token.FileSet
-}
-
-func (s SubPkg) Link() string {
+func (s *Pkg) Link() string {
 	return s.Path
 }
 
-func (s SubPkg) Doc() string {
+func (s *Pkg) Doc() string {
 	return s.Package.Doc
 }
