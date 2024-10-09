@@ -2,6 +2,7 @@ package gen
 
 import (
 	"fmt"
+	"go/doc"
 	"os"
 	"path/filepath"
 	"sort"
@@ -61,115 +62,153 @@ func New(c Config) *Gen {
 	return &Gen{config: c}
 }
 
+// Run executes the documentation generation process.
 func (g *Gen) Run(cmd *cobra.Command, args []string) {
-	// Determine the root directory to start documentation generation
 	rootDir := getArgs(args)
-	log.Infof("starting documentation generation for root directory: %s", rootDir)
+	log.Info("Starting documentation generation", "rootDir", rootDir)
 
-	// Use WalkDir to traverse directories and collect packages
 	pkgs, err := g.collectPkgs(rootDir)
 	if err != nil {
-		log.Fatalf("Failed to collect packages: %v", err)
+		log.Fatal("Failed to collect packages", "error", err)
 	}
 
 	if len(pkgs) == 0 {
-		log.Infof("no Go packages found in the specified directory: %s. no documentation generated.", rootDir)
+		log.Info("No Go packages found in the specified directory. No documentation generated.", "rootDir", rootDir)
 		return
 	}
 
-	// Check if the root package has Go files
-	hasRootGoFiles := false
-	for _, p := range pkgs {
-		if p.Path == "./" || p.Path == "." || p.Path == "" {
-			if len(p.Package.Filenames) > 0 {
-				hasRootGoFiles = true
-				break
-			}
-		}
-	}
+	hasRootGoFiles := g.hasGoFilesInRoot(pkgs)
+	log.Info("Root has Go files", "hasRootGoFiles", hasRootGoFiles)
 
-	log.Infof("root has Go files: %v", hasRootGoFiles)
-
-	// Always generate per-package DOCS.md files
-	log.Infof("generating per-package DOCS.md files.")
+	// Generate per-package DOCS.md files
+	log.Info("Generating per-package DOCS.md files")
 	g.generatePerPkgReadme(pkgs, rootDir, g.config)
 
-	log.Infof("generating summary DOCS.md.")
+	// Generate summary DOCS.md
+	log.Info("Generating summary DOCS.md")
 	g.generateSummaryReadme(pkgs, rootDir, g.config)
 }
 
+// hasGoFilesInRoot checks if the root package contains Go files.
+func (g *Gen) hasGoFilesInRoot(pkgs []*common.Pkg) bool {
+	for _, p := range pkgs {
+		if p.Path == "." || p.Path == "" {
+			if len(p.Package.Filenames) > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// collectPkgs traverses the directory tree to collect Go packages.
 func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 	var pkgs []*common.Pkg
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
-	// WalkDir function
+	excludeMap := g.buildExcludeMap()
+
 	walkFn := func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			log.Errorf("Error accessing path %s: %v", path, err)
+			log.Error("Error accessing path", "path", path, "error", err)
 			return nil // Continue walking
 		}
 
-		// Skip excluded paths
+		// Normalize path to use forward slashes
 		relPath, err := filepath.Rel(rootDir, path)
 		if err != nil {
-			log.Errorf("Failed to get relative path for %s: %v", path, err)
-			return nil // Continue walking
+			log.Error("Failed to get relative path", "path", path, "error", err)
+			return nil
 		}
 		relPath = filepath.ToSlash(relPath)
 
-		for _, excludePath := range g.config.ExcludePaths {
-			excludePath = filepath.ToSlash(filepath.Clean(excludePath))
-			if relPath == excludePath || strings.HasPrefix(relPath, excludePath+"/") {
-				log.Infof("Skipping excluded path: %s", relPath)
+		// Check for excluded paths
+		if shouldExclude(relPath, excludeMap) {
+			log.Info("Skipping excluded path", "path", relPath)
+			if d.IsDir() {
 				return filepath.SkipDir
 			}
+			return nil
 		}
 
 		// Skip hidden directories
 		if d.IsDir() && strings.HasPrefix(d.Name(), ".") {
-			log.Infof("Skipping hidden directory: %s", path)
+			log.Info("Skipping hidden directory", "path", path)
 			return filepath.SkipDir
 		}
 
 		if d.IsDir() {
-			// Check if the directory contains Go files
-			hasGoFiles, err := containsGoFiles(path)
+			hasGo, err := containsGoFiles(path)
 			if err != nil {
-				log.Errorf("Failed checking for Go files in %s: %v", path, err)
+				log.Error("Failed to check for Go files", "path", path, "error", err)
 				return nil // Continue walking
 			}
-
-			if hasGoFiles {
+			if hasGo {
 				wg.Add(1)
 				go func(dir string) {
 					defer wg.Done()
-
-					pk, fs, err := loadPackages(dir, g.config.Unexported)
+					pk, fs, modName, err := loadPackages(dir, g.config.Unexported)
 					if err != nil {
-						log.Errorf("Failed loading documentation for %s: %v", dir, err)
+						log.Error("Failed to load package", "dir", dir, "error", err)
 						return
 					}
 
 					mu.Lock()
 					defer mu.Unlock()
-					// Determine the package path relative to rootDir
+
 					packagePath, err := filepath.Rel(rootDir, dir)
 					if err != nil {
 						packagePath = dir // Fallback to absolute path
 					}
 					packagePath = filepath.ToSlash(packagePath)
 					if packagePath == "." {
-						packagePath = "" // Represent root without "./"
+						packagePath = "" // Represent root without "."
+					}
+
+					subPkgs := []*common.Pkg{}
+					if !g.config.SkipSubPkgs {
+						for _, imp := range pk.Imports {
+							if !strings.HasPrefix(imp, modName+"/") {
+								continue
+							}
+
+							subPath := strings.TrimPrefix(imp, modName+"/")
+							subPath = fmt.Sprintf("%s/%s", rootDir, subPath)
+							subDir, err := filepath.Rel(dir, subPath)
+							if err != nil {
+								log.Error("Failed to get sub-package path", "path", subPath, "error", err)
+								continue
+							}
+
+							// Corrected: Check subDir instead of subPath
+							if _, err := os.Stat(subPath); os.IsNotExist(err) {
+								log.Warn("Sub-package path does not exist", "path", subDir, "error", err)
+								continue
+							} else if err != nil {
+								log.Error("Failed to stat sub-package path", "path", subDir, "error", err)
+								continue
+							}
+
+							log.Info("Collecting sub-packages", "path", subDir)
+							subSubPkgs, err := g.collectPkgs(subDir)
+							if err != nil {
+								log.Error("Failed to collect sub-packages", "path", subDir, "error", err)
+								continue
+							}
+							subPkgs = append(subPkgs, subSubPkgs...)
+						}
 					}
 
 					pkgs = append(pkgs, &common.Pkg{
-						Package:  pk,
+						DocFile:  "DOCS.md",
 						FilesSet: fs,
-						SubPkgs:  nil, // Not handling nested subpackages here
+						Module:   modName,
+						Package:  pk,
 						Path:     packagePath,
+						SubPkgs:  subPkgs,
 					})
-					log.Infof("loaded package %s", packagePath)
+					log.Info("Loaded package", "package", packagePath)
 				}(path)
 			}
 		}
@@ -177,21 +216,18 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 		return nil
 	}
 
-	// Start walking the directory tree
-	err := filepath.WalkDir(rootDir, walkFn)
-	if err != nil {
+	if err := filepath.WalkDir(rootDir, walkFn); err != nil {
 		return nil, fmt.Errorf("error walking the path %s: %w", rootDir, err)
 	}
 
-	// Wait for all goroutines to finish
 	wg.Wait()
 
-	// Sort the pkgs slice alphabetically by Path
+	// Sort packages alphabetically by Path
 	sort.Slice(pkgs, func(i, j int) bool {
 		return pkgs[i].Path < pkgs[j].Path
 	})
 
-	// Optionally, sort SubPkgs if they are being used
+	// Sort sub-packages if any
 	for _, pkg := range pkgs {
 		if len(pkg.SubPkgs) > 0 {
 			sort.Slice(pkg.SubPkgs, func(a, b int) bool {
@@ -203,122 +239,130 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 	return pkgs, nil
 }
 
+// buildExcludeMap constructs a map for quick exclusion checks.
+func (g *Gen) buildExcludeMap() map[string]struct{} {
+	excludeMap := make(map[string]struct{})
+	for _, excludePath := range g.config.ExcludePaths {
+		cleanPath := filepath.ToSlash(filepath.Clean(excludePath))
+		excludeMap[cleanPath] = struct{}{}
+	}
+	return excludeMap
+}
+
+// shouldExclude determines if a path should be excluded based on the exclude map.
+func shouldExclude(relPath string, excludeMap map[string]struct{}) bool {
+	for exclude := range excludeMap {
+		if relPath == exclude || strings.HasPrefix(relPath, exclude+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// generatePerPkgReadme generates DOCS.md files for each package.
 func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 10) // Limit concurrency to 10 goroutines
 
 	for _, p := range allPackages {
-		// Skip the root package if it has Go files (handled separately)
-		if p.Path == "" && len(p.Package.Filenames) > 0 {
+		// Optionally, handle root package separately if needed
+		if p.Path == "" && len(p.Package.Filenames) > 0 && !g.config.SkipSubPkgs {
+			// You might want to generate a separate DOCS.md for root if it has Go files
+			// Currently, it's skipped to avoid duplication in summary
 			continue
 		}
 
 		wg.Add(1)
 		sem <- struct{}{} // Acquire a slot
 
-		go func(p *common.Pkg) {
+		go func(pkg *common.Pkg) {
 			defer wg.Done()
 			defer func() { <-sem }() // Release the slot
 
-			// Ensure the package has at least one file
-			if len(p.Package.Filenames) == 0 {
-				log.Errorf("No files found for package %s", p.Package.Name)
+			if len(pkg.Package.Filenames) == 0 {
+				log.Warn("No files found for package. Skipping DOCS.md generation.", "package", pkg.Package.Name)
 				return
 			}
 
-			// Determine the output directory based on the package path
-			pkgPath := filepath.Join(rootDir, p.Path)
-
-			// Define the path for DOCS.md
+			pkgPath := filepath.Join(rootDir, pkg.Path)
 			docsPath := filepath.Join(pkgPath, "DOCS.md")
-			docsPath = filepath.Clean(docsPath) // Clean the path
+			docsPath = filepath.Clean(docsPath)
 
-			// Optional: Check if DOCS.md already exists and handle accordingly
+			// Overwrite existing DOCS.md with a warning
 			if _, err := os.Stat(docsPath); err == nil {
-				// DOCS.md already exists, write to DOCS.md instead
-				log.Warnf("DOCS.md already exists in %s. Overwriting.", docsPath)
+				log.Warn("DOCS.md already exists. Overwriting.", "path", docsPath)
 			}
 
-			// Create or truncate the DOCS.md file
 			file, err := os.Create(docsPath)
 			if err != nil {
-				log.Errorf("failed to create DOCS.md in %s: %v", pkgPath, err)
+				log.Error("Failed to create DOCS.md", "path", docsPath, "error", err)
 				return
 			}
 			defer file.Close()
 
-			p.DocFile = filepath.Base(docsPath)
-
-			// Generate the documentation and write to DOCS.md
-			err = template.Execute(file, p, cfg)
+			// Execute the template
+			err = template.Execute(file, pkg, cfg)
 			if err != nil {
-				log.Errorf("failed to write documentation for %s: %v", p.Package.Name, err)
+				log.Error("Failed to write documentation", "package", pkg.Package.Name, "error", err)
 				return
 			}
 
-			// Compute the relative path from rootDir to readmePath
 			relPath, err := filepath.Rel(rootDir, docsPath)
 			if err != nil {
 				relPath = docsPath
 			}
 
-			log.Infof("generated DOCS.md for package %s at %s", p.Package.Name, relPath)
+			log.Info("Generated DOCS.md", "package", pkg.Package.Name, "path", relPath)
 		}(p)
 	}
 
 	wg.Wait()
 }
 
+// generateSummaryReadme generates a summary DOCS.md at the root directory.
 func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
-	// Define the path for summary DOCS.md
 	summaryPath := filepath.Join(rootDir, "DOCS.md")
 	summaryPath = filepath.Clean(summaryPath)
 
-	// Optional: Check if DOCS.md already exists and handle accordingly
 	if _, err := os.Stat(summaryPath); err == nil {
-		log.Warnf("Summary DOCS.md already exists in %s. Overwriting", summaryPath)
+		log.Warn("Summary DOCS.md already exists. Overwriting.", "path", summaryPath)
 	}
 
-	// Create or truncate the summary DOCS.md file
 	file, err := os.Create(summaryPath)
 	if err != nil {
-		log.Errorf("failed to create summary DOCS.md in %s: %v", rootDir, err)
+		log.Error("Failed to create summary DOCS.md", "rootDir", rootDir, "error", err)
 		return
 	}
 	defer file.Close()
 
-	// Prepare data for the summary template
-	subPackages := make([]*common.Pkg, 0, len(allPackages))
-	for _, p := range allPackages {
-		// Exclude the root package if it has Go files
-		if p.Path == "" && len(p.Package.Filenames) > 0 {
-			continue
-		}
-
-		// Prepare SubPkg with Path, Link, and Doc
-		subPkg := &common.Pkg{
-			Path:    p.Path,
-			Package: p.Package,
-			DocFile: filepath.Base(summaryPath),
-		}
-		subPackages = append(subPackages, subPkg)
-	}
+	subPackages := filterSubPackages(allPackages)
 
 	summaryData := template.SummaryData{
 		SubPkgs: subPackages,
 	}
 
-	// Execute the summary template
 	err = template.Execute(file, &summaryData, cfg)
 	if err != nil {
-		log.Errorf("failed to write summary documentation: %v", err)
+		log.Error("Failed to write summary documentation", "error", err)
 		return
 	}
 
-	log.Infof("generated summary DOCS.md at %s", summaryPath)
+	log.Info("Generated summary DOCS.md", "path", summaryPath)
 }
 
-// getArgs is used to get the arguments for the command.
+// filterSubPackages filters out the root package if necessary.
+func filterSubPackages(allPackages []*common.Pkg) []*common.Pkg {
+	var subPkgs []*common.Pkg
+	for _, p := range allPackages {
+		if p.Path == "" && len(p.Package.Filenames) > 0 {
+			continue
+		}
+		subPkgs = append(subPkgs, p)
+	}
+	return subPkgs
+}
+
+// getArgs retrieves the root directory from command-line arguments or defaults to the current working directory.
 func getArgs(args []string) string {
 	var path string
 	var err error
@@ -327,15 +371,53 @@ func getArgs(args []string) string {
 	} else {
 		path, err = os.Getwd()
 		if err != nil {
-			log.Fatalf("failed to get current working directory: %v", err)
+			log.Fatal("Failed to get current working directory", "error", err)
 		}
 	}
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		log.Fatalf("failed to get absolute path for %s: %v", path, err)
+		log.Fatal("Failed to get absolute path", "path", path, "error", err)
 	}
 
-	log.Infof("using root directory: %s", absPath)
+	log.Info("Using root directory", "path", absPath)
 	return absPath
+}
+
+// attachSubPkgs attaches sub-packages based on the module name and package imports.
+func (g *Gen) attachSubPkgs(module string, pkg *doc.Package) []*common.Pkg {
+	var pkgs []*common.Pkg
+	for _, imp := range pkg.Imports {
+		if !strings.HasPrefix(imp, module+"/") {
+			continue
+		}
+		subPath := strings.TrimPrefix(imp, module+"/")
+		subDir := filepath.Join(pkg.ImportPath, subPath)
+
+		if _, err := os.Stat(subDir); os.IsNotExist(err) {
+			log.Warn("Sub-package path does not exist", "path", subDir, "error", err)
+			continue
+		} else if err != nil {
+			log.Error("Failed to stat sub-package path", "path", subDir, "error", err)
+			continue
+		}
+
+		log.Infof("Collecting sub-packages", "path", subDir)
+
+		pk, fs, _, err := loadPackages(subPath, g.config.Unexported)
+		if err != nil {
+			log.Error("Failed to collect sub-packages", "path", subDir, "error", err)
+			continue
+		}
+
+		pkgs = append(pkgs, &common.Pkg{
+			DocFile:  "DOCS.md",
+			FilesSet: fs,
+			Module:   module,
+			Package:  pk,
+			Path:     subPath,
+			SubPkgs:  g.attachSubPkgs(module, pk),
+		})
+	}
+	return pkgs
 }

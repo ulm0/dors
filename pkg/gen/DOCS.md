@@ -4,21 +4,29 @@ Package gen provides a command to generate documentation for a Go package.
 
 ## Functions
 
-### func [`containsGoFiles`](run.go#L73)
+### func [`containsGoFiles`](run.go#L72)
 
 ```go
 func containsGoFiles(dir string) (bool, error)
 ```
 
-containsGoFiles checks if a directory contains go files.
+containsGoFiles checks if a directory contains Go files excluding test files.
 
-### func [`getArgs`](types.go#L322)
+### func [`filterSubPackages`](types.go#L354)
+
+```go
+func filterSubPackages(allPackages []*common.Pkg) []*common.Pkg
+```
+
+filterSubPackages filters out the root package if necessary.
+
+### func [`getArgs`](types.go#L366)
 
 ```go
 func getArgs(args []string) string
 ```
 
-getArgs is used to get the arguments for the command.
+getArgs retrieves the root directory from command-line arguments or defaults to the current working directory.
 
 ### func [`init`](run.go#L14)
 
@@ -29,14 +37,22 @@ func init()
 ### func [`loadPackages`](run.go#L19)
 
 ```go
-func loadPackages(dir string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
+func loadPackages(dir string, includeUnexported bool) (*doc.Package, *token.FileSet, string, error)
 ```
 
-loadPackages returns the documentation for a package.
+loadPackages loads the package documentation for a given directory.
+
+### func [`shouldExclude`](types.go#L253)
+
+```go
+func shouldExclude(relPath string, excludeMap map[string]struct{ ... }) bool
+```
+
+shouldExclude determines if a path should be excluded based on the exclude map.
 
 ## Types
 
-### type [`Config`](types.go#L19)
+### type [`Config`](types.go#L20)
 
 ```go
 type Config struct {
@@ -77,7 +93,7 @@ type Config struct {
 
 Config is used to configure the documentation generation.
 
-### type [`Gen`](types.go#L55)
+### type [`Gen`](types.go#L56)
 
 ```go
 type Gen struct {
@@ -87,7 +103,7 @@ type Gen struct {
 
 Gen is used to generate documentation for a Go package.
 
-#### func [New](types.go#L60)
+#### func [New](types.go#L61)
 
 ```go
 func New(c Config) *Gen
@@ -95,26 +111,58 @@ func New(c Config) *Gen
 
 New creates a new Gen instance.
 
-#### func [`(*Gen) Run`](types.go#L64)
+#### func [`(*Gen) Run`](types.go#L66)
 
 ```go
 func (g *Gen) Run(cmd *cobra.Command, args []string)
 ```
 
-#### func [`(*Gen) collectPkgs`](types.go#L101)
+Run executes the documentation generation process.
+
+#### func [`(*Gen) attachSubPkgs`](types.go#L388)
+
+```go
+func (g *Gen) attachSubPkgs(module string, pkg *doc.Package) []*common.Pkg
+```
+
+attachSubPkgs attaches sub-packages based on the module name and package imports.
+
+#### func [`(*Gen) buildExcludeMap`](types.go#L243)
+
+```go
+func (g *Gen) buildExcludeMap() map[string]struct{ ... }
+```
+
+buildExcludeMap constructs a map for quick exclusion checks.
+
+#### func [`(*Gen) collectPkgs`](types.go#L105)
 
 ```go
 func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error)
 ```
 
-#### func [`(*Gen) generatePerPkgReadme`](types.go#L206)
+collectPkgs traverses the directory tree to collect Go packages.
+
+#### func [`(*Gen) generatePerPkgReadme`](types.go#L263)
 
 ```go
 func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 ```
 
-#### func [`(*Gen) generateSummaryReadme`](types.go#L272)
+generatePerPkgReadme generates DOCS.md files for each package.
+
+#### func [`(*Gen) generateSummaryReadme`](types.go#L323)
 
 ```go
 func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 ```
+
+generateSummaryReadme generates a summary DOCS.md at the root directory.
+
+#### func [`(*Gen) hasGoFilesInRoot`](types.go#L93)
+
+```go
+func (g *Gen) hasGoFilesInRoot(pkgs []*common.Pkg) bool
+```
+
+hasGoFilesInRoot checks if the root package contains Go files.

@@ -9,6 +9,7 @@ import (
 type Pkg struct {
 	DocFile  string
 	FilesSet *token.FileSet
+	Module   string
 	Package  *doc.Package
 	Path     string
 	SubPkgs  []*Pkg
