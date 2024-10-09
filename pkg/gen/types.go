@@ -169,7 +169,7 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 						SubPkgs:  nil, // Not handling nested subpackages here
 						Path:     packagePath,
 					})
-					log.Infof("Loaded package: %s", packagePath)
+					log.Infof("loaded package %s", packagePath)
 				}(path)
 			}
 		}

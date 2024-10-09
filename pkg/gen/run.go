@@ -52,7 +52,7 @@ func loadPackages(dir string, includeUnexported bool) (*doc.Package, *token.File
 	}
 
 	pk := pkgs[0]
-	log.Infof("successfully loaded package: %s", pk.Name)
+	log.Infof("successfully loaded package %s", pk.Name)
 
 	var docMode doc.Mode
 	if includeUnexported {
@@ -65,7 +65,7 @@ func loadPackages(dir string, includeUnexported bool) (*doc.Package, *token.File
 		return nil, nil, fmt.Errorf("failed creating documentation: %w", err)
 	}
 
-	log.Infof("documentation loaded for package: %s", pk.Name)
+	log.Infof("documentation loaded for package %s", pk.Name)
 	return docPkg, pk.Fset, nil
 }
 
