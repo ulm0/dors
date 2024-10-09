@@ -226,7 +226,7 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 			// Create or truncate the README.md file
 			file, err := os.Create(readmePath)
 			if err != nil {
-				log.Errorf("Failed to create README.md in %s: %v", pkgPath, err)
+				log.Errorf("failed to create README.md in %s: %v", pkgPath, err)
 				return
 			}
 			defer file.Close()
@@ -234,7 +234,7 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 			// Generate the documentation and write to README.md
 			err = template.Execute(file, p, cfg)
 			if err != nil {
-				log.Errorf("Failed to write documentation for %s: %v", p.Package.Name, err)
+				log.Errorf("failed to write documentation for %s: %v", p.Package.Name, err)
 				return
 			}
 
@@ -244,7 +244,7 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 				relPath = readmePath
 			}
 
-			log.Infof("Generated README.md for package %s at %s", p.Package.Name, relPath)
+			log.Infof("generated README.md for package %s at %s", p.Package.Name, relPath)
 		}(p)
 	}
 
@@ -258,13 +258,13 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 
 	// Optional: Check if README.md already exists and handle accordingly
 	if _, err := os.Stat(summaryPath); err == nil {
-		log.Warnf("Summary README.md already exists in %s. Overwriting.", summaryPath)
+		log.Warnf("summary README.md already exists in %s. Overwriting.", summaryPath)
 	}
 
 	// Create or truncate the summary README.md file
 	file, err := os.Create(summaryPath)
 	if err != nil {
-		log.Errorf("Failed to create summary README.md in %s: %v", rootDir, err)
+		log.Errorf("failed to create summary README.md in %s: %v", rootDir, err)
 		return
 	}
 	defer file.Close()
@@ -292,11 +292,11 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 	// Execute the summary template
 	err = template.Execute(file, &summaryData, cfg)
 	if err != nil {
-		log.Errorf("Failed to write summary documentation: %v", err)
+		log.Errorf("failed to write summary documentation: %v", err)
 		return
 	}
 
-	log.Infof("Generated summary README.md at %s", summaryPath)
+	log.Infof("generated summary README.md at %s", summaryPath)
 }
 
 // getArgs is used to get the arguments for the command.
@@ -308,15 +308,15 @@ func getArgs(args []string) string {
 	} else {
 		path, err = os.Getwd()
 		if err != nil {
-			log.Fatalf("Failed to get current working directory: %v", err)
+			log.Fatalf("failed to get current working directory: %v", err)
 		}
 	}
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		log.Fatalf("Failed to get absolute path for %s: %v", path, err)
+		log.Fatalf("failed to get absolute path for %s: %v", path, err)
 	}
 
-	log.Infof("Using root directory: %s", absPath)
+	log.Infof("using root directory: %s", absPath)
 	return absPath
 }
