@@ -12,11 +12,11 @@ var files embed.FS
 
 ### func [Execute](template.go#L55)
 
-Execute is used to execute the README.md template.
-
 ```go
 func Execute(w io.Writer, data interface{ ... }, options ...markdown.Option) error
 ```
+
+Execute is used to execute the README.md template.
 
 ### func [filename](template.go#L148)
 
@@ -32,11 +32,11 @@ func fmtDeclaration(fset *token.FileSet, decl *ast.GenDecl, spec ast.Spec) strin
 
 ### func [funcSignature](template.go#L165)
 
-Helper function to get the function or method signature as a string
-
 ```go
 func funcSignature(fset *token.FileSet, decl *ast.FuncDecl) string
 ```
+
+Helper function to get the function or method signature as a string
 
 ### func [funcs](template.go#L89)
 
@@ -54,13 +54,13 @@ func lineNumber(fset *token.FileSet, pos token.Pos) int
 
 ### type [SummaryData](template.go#L85)
 
-SummaryData is used to store the data for the summary template.
-
 ```go
 type SummaryData struct {
 	SubPkgs []common.SubPkg
 }
 ```
+
+SummaryData is used to store the data for the summary template.
 
 ### type [multiNewLineEliminator](template.go#L24)
 

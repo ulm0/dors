@@ -4,8 +4,6 @@
 
 ### type [Pkg](common.go#L9)
 
-Pkg is used to store the package information.
-
 ```go
 type Pkg struct {
 	Package		*doc.Package
@@ -15,9 +13,9 @@ type Pkg struct {
 }
 ```
 
-### type [SubPkg](common.go#L17)
+Pkg is used to store the package information.
 
-SubPkg is used to store the sub package information.
+### type [SubPkg](common.go#L17)
 
 ```go
 type SubPkg struct {
@@ -26,6 +24,8 @@ type SubPkg struct {
 	FilesSet	*token.FileSet
 }
 ```
+
+SubPkg is used to store the sub package information.
 
 #### func (SubPkg) [Doc](common.go#L27)
 

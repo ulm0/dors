@@ -23,6 +23,10 @@ var matchRx = regexp.MustCompile(`(` + urlTitle + `((` + urlRx + `)|(` + localRx
 
 ### func [ToMarkdown](comment.go#L42)
 
+```go
+func ToMarkdown(w io.Writer, text string, opts ...Option)
+```
+
 ToMarkdown converts comment text to formatted Markdown.
 The comment was prepared by DocReader,
 so it is known not to have leading, trailing blank lines
@@ -42,10 +46,6 @@ URLs in the comment text are converted into links; if the URL also appears
 in the words map, the link is taken from the map (if the corresponding map
 value is the empty string, the URL is not converted into a link).
 
-```go
-func ToMarkdown(w io.Writer, text string, opts ...Option)
-```
-
 ### func [commonPrefix](comment.go#L280)
 
 ```go
@@ -54,13 +54,17 @@ func commonPrefix(a, b string) string
 
 ### func [diffCharIdx](comment.go#L470)
 
-diffCharIdx returns the index of a diff character, given the first line of a code block.
-
 ```go
 func diffCharIdx(line string) int
 ```
 
+diffCharIdx returns the index of a diff character, given the first line of a code block.
+
 ### func [emphasize](comment.go#L166)
+
+```go
+func emphasize(w io.Writer, line string, words map[string]string, nice bool)
+```
 
 Emphasize and escape a line of text for HTML. URLs are converted into links;
 if the URL also appears in the words map, the link is taken from the map (if
@@ -69,18 +73,14 @@ into a link). Go identifiers that appear in the words map are italicized; if
 the corresponding map value is not the empty string, it is considered a URL
 and the word is converted into a link.
 
-```go
-func emphasize(w io.Writer, line string, words map[string]string, nice bool)
-```
-
 ### func [heading](comment.go#L312)
-
-heading returns the trimmed line if it passes as a section heading;
-otherwise it returns the empty string.
 
 ```go
 func heading(line string) string
 ```
+
+heading returns the trimmed line if it passes as a section heading;
+otherwise it returns the empty string.
 
 ### func [indentLen](comment.go#L268)
 
@@ -96,28 +96,28 @@ func isBlank(s string) bool
 
 ### func [isDiffLine](comment.go#L488)
 
-isDiffLine returns if the character at i is a '+' or a '-' sign.
-
 ```go
 func isDiffLine(line string, i int) bool
 ```
 
-### func [isValidDiffLine](comment.go#L480)
+isDiffLine returns if the character at i is a '+' or a '-' sign.
 
-isDiffLine returns if this is a valid diff line given a code block line, and the expected index
-for the diff character.
+### func [isValidDiffLine](comment.go#L480)
 
 ```go
 func isValidDiffLine(line string, i int) bool
 ```
 
-### func [pairedParensPrefixLen](comment.go#L138)
+isDiffLine returns if this is a valid diff line given a code block line, and the expected index
+for the diff character.
 
-pairedParensPrefixLen returns the length of the longest prefix of s containing paired parentheses.
+### func [pairedParensPrefixLen](comment.go#L138)
 
 ```go
 func pairedParensPrefixLen(s string) int
 ```
+
+pairedParensPrefixLen returns the length of the longest prefix of s containing paired parentheses.
 
 ### func [unindent](comment.go#L288)
 
@@ -129,19 +129,19 @@ func unindent(block []string)
 
 ### type [Option](comment.go#L85)
 
-Option is option type for ToMarkdown
-
 ```go
 type Option func(*options)
 ```
 
-#### func [OptNoDiff](comment.go#L96)
+Option is option type for ToMarkdown
 
-OptNoDiff disables automatic marking of code blocks as diffs.
+#### func [OptNoDiff](comment.go#L96)
 
 ```go
 func OptNoDiff(noDiffs bool) Option
 ```
+
+OptNoDiff disables automatic marking of code blocks as diffs.
 
 #### func [OptUseStdlib](comment.go#L100)
 
@@ -151,14 +151,14 @@ func OptUseStdlib(useStdlib bool) Option
 
 #### func [OptWords](comment.go#L91)
 
+```go
+func OptWords(words map[string]string) Option
+```
+
 OptWords sets the list of known words.
 Go identifiers that appear in the words map are italicized; if the corresponding
 map value is not the empty string, it is considered a URL and the word is converted
 into a link.
-
-```go
-func OptWords(words map[string]string) Option
-```
 
 ### type [block](comment.go#L370)
 
