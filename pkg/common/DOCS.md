@@ -1,4 +1,4 @@
-# Package common
+# Package `common`
 
 ## Types
 

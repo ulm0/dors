@@ -1,4 +1,4 @@
-# Package cmd
+# Package `cmd`
 
 ## Variables
 

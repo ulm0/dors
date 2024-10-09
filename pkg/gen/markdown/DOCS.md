@@ -1,4 +1,4 @@
-# Package markdown
+# Package `markdown`
 
 ## Constants
 
