@@ -6,22 +6,23 @@
 
 ```go
 type Pkg struct {
-	Package		*doc.Package
+	DocFile		string
 	FilesSet	*token.FileSet
-	SubPkgs		[]*Pkg
+	Package		*doc.Package
 	Path		string
+	SubPkgs		[]*Pkg
 }
 ```
 
 Pkg is used to store the package information.
 
-#### func (*Pkg) [Doc](common.go#L20)
+#### func (*Pkg) [Doc](common.go#L21)
 
 ```go
 func (p *Pkg) Doc() string
 ```
 
-#### func (*Pkg) [Link](common.go#L16)
+#### func (*Pkg) [Link](common.go#L17)
 
 ```go
 func (p *Pkg) Link() string

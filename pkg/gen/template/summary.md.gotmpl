@@ -4,7 +4,7 @@
 
 {{ if .SubPkgs }}
 {{ range .SubPkgs }}
-* [{{ .Path }}]({{ .Path }}){{ if .Doc }}: {{ .Doc }}{{ end }}
+* [{{ .Path }}]({{ .Path }}/{{ .DocFile }}){{ if .Doc }}: {{ .Doc }}{{ end }}
 {{ end }}
 {{ else }}
 No sub-packages found.

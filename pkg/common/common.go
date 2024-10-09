@@ -7,10 +7,11 @@ import (
 
 // Pkg is used to store the package information.
 type Pkg struct {
-	Package  *doc.Package
+	DocFile  string
 	FilesSet *token.FileSet
-	SubPkgs  []*Pkg
+	Package  *doc.Package
 	Path     string
+	SubPkgs  []*Pkg
 }
 
 func (p *Pkg) Link() string {

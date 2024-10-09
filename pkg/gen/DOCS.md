@@ -12,7 +12,7 @@ func containsGoFiles(dir string) (bool, error)
 
 containsGoFiles checks if a directory contains go files.
 
-### func [getArgs](types.go#L318)
+### func [getArgs](types.go#L322)
 
 ```go
 func getArgs(args []string) string
@@ -113,7 +113,7 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error)
 func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 ```
 
-#### func (*Gen) [generateSummaryReadme](types.go#L269)
+#### func (*Gen) [generateSummaryReadme](types.go#L272)
 
 ```go
 func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config)

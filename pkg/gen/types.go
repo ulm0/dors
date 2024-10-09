@@ -90,11 +90,11 @@ func (g *Gen) Run(cmd *cobra.Command, args []string) {
 
 	log.Infof("root has Go files: %v", hasRootGoFiles)
 
-	// Always generate per-package README.md files
-	log.Infof("generating per-package README.md files.")
+	// Always generate per-package DOCS.md files
+	log.Infof("generating per-package DOCS.md files.")
 	g.generatePerPkgReadme(pkgs, rootDir, g.config)
 
-	log.Infof("generating summary README.md.")
+	log.Infof("generating summary DOCS.md.")
 	g.generateSummaryReadme(pkgs, rootDir, g.config)
 }
 
@@ -229,24 +229,27 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 			// Determine the output directory based on the package path
 			pkgPath := filepath.Join(rootDir, p.Path)
 
-			// Define the path for README.md
-			readmePath := filepath.Join(pkgPath, "README.md")
-			readmePath = filepath.Clean(readmePath) // Clean the path
+			// Define the path for DOCS.md
+			docsPath := filepath.Join(pkgPath, "DOCS.md")
+			docsPath = filepath.Clean(docsPath) // Clean the path
 
-			// Optional: Check if README.md already exists and handle accordingly
-			if _, err := os.Stat(readmePath); err == nil {
-				log.Warnf("README.md already exists in %s. Overwriting.", readmePath)
+			// Optional: Check if DOCS.md already exists and handle accordingly
+			if _, err := os.Stat(docsPath); err == nil {
+				// DOCS.md already exists, write to DOCS.md instead
+				log.Warnf("DOCS.md already exists in %s. Overwriting.", docsPath)
 			}
 
-			// Create or truncate the README.md file
-			file, err := os.Create(readmePath)
+			// Create or truncate the DOCS.md file
+			file, err := os.Create(docsPath)
 			if err != nil {
-				log.Errorf("failed to create README.md in %s: %v", pkgPath, err)
+				log.Errorf("failed to create DOCS.md in %s: %v", pkgPath, err)
 				return
 			}
 			defer file.Close()
 
-			// Generate the documentation and write to README.md
+			p.DocFile = filepath.Base(docsPath)
+
+			// Generate the documentation and write to DOCS.md
 			err = template.Execute(file, p, cfg)
 			if err != nil {
 				log.Errorf("failed to write documentation for %s: %v", p.Package.Name, err)
@@ -254,12 +257,12 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 			}
 
 			// Compute the relative path from rootDir to readmePath
-			relPath, err := filepath.Rel(rootDir, readmePath)
+			relPath, err := filepath.Rel(rootDir, docsPath)
 			if err != nil {
-				relPath = readmePath
+				relPath = docsPath
 			}
 
-			log.Infof("generated README.md for package %s at %s", p.Package.Name, relPath)
+			log.Infof("generated DOCS.md for package %s at %s", p.Package.Name, relPath)
 		}(p)
 	}
 
@@ -267,19 +270,19 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 }
 
 func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config) {
-	// Define the path for summary README.md
-	summaryPath := filepath.Join(rootDir, "README.md")
+	// Define the path for summary DOCS.md
+	summaryPath := filepath.Join(rootDir, "DOCS.md")
 	summaryPath = filepath.Clean(summaryPath)
 
-	// Optional: Check if README.md already exists and handle accordingly
+	// Optional: Check if DOCS.md already exists and handle accordingly
 	if _, err := os.Stat(summaryPath); err == nil {
-		log.Warnf("summary README.md already exists in %s. Overwriting.", summaryPath)
+		log.Warnf("Summary DOCS.md already exists in %s. Overwriting", summaryPath)
 	}
 
-	// Create or truncate the summary README.md file
+	// Create or truncate the summary DOCS.md file
 	file, err := os.Create(summaryPath)
 	if err != nil {
-		log.Errorf("failed to create summary README.md in %s: %v", rootDir, err)
+		log.Errorf("failed to create summary DOCS.md in %s: %v", rootDir, err)
 		return
 	}
 	defer file.Close()
@@ -296,6 +299,7 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 		subPkg := &common.Pkg{
 			Path:    p.Path,
 			Package: p.Package,
+			DocFile: filepath.Base(summaryPath),
 		}
 		subPackages = append(subPackages, subPkg)
 	}
@@ -311,7 +315,7 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 		return
 	}
 
-	log.Infof("generated summary README.md at %s", summaryPath)
+	log.Infof("generated summary DOCS.md at %s", summaryPath)
 }
 
 // getArgs is used to get the arguments for the command.
