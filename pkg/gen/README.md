@@ -12,7 +12,7 @@ func containsGoFiles(dir string) (bool, error)
 
 containsGoFiles checks if a directory contains go files.
 
-### func [getArgs](types.go#L303)
+### func [getArgs](types.go#L318)
 
 ```go
 func getArgs(args []string) string
@@ -36,7 +36,7 @@ loadPackages returns the documentation for a package.
 
 ## Types
 
-### type [Config](types.go#L18)
+### type [Config](types.go#L19)
 
 ```go
 type Config struct {
@@ -77,7 +77,7 @@ type Config struct {
 
 Config is used to configure the documentation generation.
 
-### type [Gen](types.go#L54)
+### type [Gen](types.go#L55)
 
 ```go
 type Gen struct {
@@ -87,7 +87,7 @@ type Gen struct {
 
 Gen is used to generate documentation for a Go package.
 
-#### func [New](types.go#L59)
+#### func [New](types.go#L60)
 
 ```go
 func New(c Config) *Gen
@@ -95,25 +95,25 @@ func New(c Config) *Gen
 
 New creates a new Gen instance.
 
-#### func (*Gen) [Run](types.go#L63)
+#### func (*Gen) [Run](types.go#L64)
 
 ```go
 func (g *Gen) Run(cmd *cobra.Command, args []string)
 ```
 
-#### func (*Gen) [collectPkgs](types.go#L100)
+#### func (*Gen) [collectPkgs](types.go#L101)
 
 ```go
 func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error)
 ```
 
-#### func (*Gen) [generatePerPkgReadme](types.go#L191)
+#### func (*Gen) [generatePerPkgReadme](types.go#L206)
 
 ```go
 func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
 ```
 
-#### func (*Gen) [generateSummaryReadme](types.go#L254)
+#### func (*Gen) [generateSummaryReadme](types.go#L269)
 
 ```go
 func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config)

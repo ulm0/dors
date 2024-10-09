@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -184,6 +185,20 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 
 	// Wait for all goroutines to finish
 	wg.Wait()
+
+	// Sort the pkgs slice alphabetically by Path
+	sort.Slice(pkgs, func(i, j int) bool {
+		return pkgs[i].Path < pkgs[j].Path
+	})
+
+	// Optionally, sort SubPkgs if they are being used
+	for _, pkg := range pkgs {
+		if len(pkg.SubPkgs) > 0 {
+			sort.Slice(pkg.SubPkgs, func(a, b int) bool {
+				return pkg.SubPkgs[a].Path < pkg.SubPkgs[b].Path
+			})
+		}
+	}
 
 	return pkgs, nil
 }
