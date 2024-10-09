@@ -2,12 +2,8 @@ package gen
 
 import (
 	"fmt"
-	"go/doc"
-	"go/token"
-	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 
@@ -56,7 +52,6 @@ type Config struct {
 
 // Gen is used to generate documentation for a Go package.
 type Gen struct {
-	// client *http.Client
 	config Config
 }
 
@@ -65,55 +60,10 @@ func New(c Config) *Gen {
 	return &Gen{config: c}
 }
 
-// Create is used to generate the documentation for a package.
-func (g *Gen) Create(name string, w io.Writer) error {
-	p, err := g.get(name)
-	if err != nil {
-		return err
-	}
-
-	return template.Execute(w, p, g.config)
-}
-
-// get is used to get the package information.
-func (g *Gen) get(name string) (*common.Pkg, error) {
-	log.Infof("getting %s\n", name)
-	p, fset, err := docGet(name, g.config.Unexported)
-	if err != nil {
-		if strings.Contains(err.Error(), "no packages found") {
-			// Root directory has no Go files; proceed without a root package
-			p = &doc.Package{
-				Name:      "",
-				Doc:       "",
-				Filenames: []string{},
-			}
-			fset = token.NewFileSet()
-			log.Infof("No Go files found in root directory: %s. Proceeding with sub-packages.", name)
-		} else {
-			return nil, fmt.Errorf("loading packages: %w", err) // Wrap non-nil errors
-		}
-	} else {
-		sort.Strings(p.Filenames)
-	}
-
-	pk := &common.Pkg{Package: p, FilesSet: fset}
-
-	if !g.config.SkipSubPkgs {
-		subPkgs, err := getSubPkgs(name, name, g.config.Unexported, g.config.Recursive, g.config.ExcludePaths)
-		if err != nil {
-			return nil, fmt.Errorf("loading sub-packages: %w", err)
-		}
-
-		pk.SubPkgs = subPkgs
-	}
-
-	return pk, nil
-}
-
 func (g *Gen) Run(cmd *cobra.Command, args []string) {
 	// Determine the root directory to start documentation generation
 	rootDir := getArgs(args)
-	log.Infof("Starting documentation generation for root directory: %s", rootDir)
+	log.Infof("starting documentation generation for root directory: %s", rootDir)
 
 	// Use WalkDir to traverse directories and collect packages
 	pkgs, err := g.collectPkgs(rootDir)
@@ -210,8 +160,6 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 					packagePath = filepath.ToSlash(packagePath)
 					if packagePath == "." {
 						packagePath = "" // Represent root without "./"
-					} else {
-						packagePath = packagePath // Keep the path as is without "./"
 					}
 
 					pkgs = append(pkgs, &common.Pkg{
@@ -354,10 +302,10 @@ func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, c
 // getArgs is used to get the arguments for the command.
 func getArgs(args []string) string {
 	var path string
+	var err error
 	if len(args) > 0 {
 		path = args[0]
 	} else {
-		var err error
 		path, err = os.Getwd()
 		if err != nil {
 			log.Fatalf("Failed to get current working directory: %v", err)
