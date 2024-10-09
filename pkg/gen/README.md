@@ -4,21 +4,13 @@ Package gen provides a command to generate documentation for a Go package.
 
 ## Functions
 
-### func [containsGoFiles](run.go#L152)
+### func [containsGoFiles](run.go#L73)
 
 ```go
 func containsGoFiles(dir string) (bool, error)
 ```
 
 containsGoFiles checks if a directory contains go files.
-
-### func [docGet](run.go#L21)
-
-```go
-func docGet(dir string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
-```
-
-docGet returns the documentation for a package.
 
 ### func [getArgs](types.go#L303)
 
@@ -28,20 +20,19 @@ func getArgs(args []string) string
 
 getArgs is used to get the arguments for the command.
 
-### func [getSubPkgs](run.go#L76)
-
-```go
-func getSubPkgs(baseDir string, dir string, includeUnexported bool, recursive bool, excludePaths []string) ([]common.SubPkg, error)
-```
-
-getSubPkgs returns the sub packages of a package.
-baseDir is the root directory from which relative paths are calculated.
-
-### func [init](run.go#L16)
+### func [init](run.go#L14)
 
 ```go
 func init()
 ```
+
+### func [loadPackages](run.go#L19)
+
+```go
+func loadPackages(dir string, includeUnexported bool) (*doc.Package, *token.FileSet, error)
+```
+
+loadPackages returns the documentation for a package.
 
 ## Types
 

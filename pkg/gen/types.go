@@ -144,7 +144,7 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 				go func(dir string) {
 					defer wg.Done()
 
-					pk, fs, err := docGet(dir, g.config.Unexported)
+					pk, fs, err := loadPackages(dir, g.config.Unexported)
 					if err != nil {
 						log.Errorf("Failed loading documentation for %s: %v", dir, err)
 						return

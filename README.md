@@ -2,12 +2,12 @@
 
 ## Sub Packages
 
-* [pkg/common](pkg/common/README.md)
+* [pkg/gen/markdown](pkg/gen/markdown)
 
-* [pkg/gen/template](pkg/gen/template/README.md)
+* [pkg/common](pkg/common)
 
-* [pkg/gen/markdown](pkg/gen/markdown/README.md)
+* [pkg/gen/template](pkg/gen/template)
 
-* [cmd](cmd/README.md)
+* [cmd](cmd)
 
-* [pkg/gen](pkg/gen/README.md): Package gen provides a command to generate documentation for a Go package.
+* [pkg/gen](pkg/gen): Package gen provides a command to generate documentation for a Go package.
