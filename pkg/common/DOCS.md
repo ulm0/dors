@@ -1,4 +1,4 @@
-# common
+# Package common
 
 ## Types
 

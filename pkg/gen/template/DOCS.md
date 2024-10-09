@@ -1,4 +1,4 @@
-# template
+# Package template
 
 ## Variables
 
