@@ -13,10 +13,10 @@ type Pkg struct {
 	Path     string
 }
 
-func (s *Pkg) Link() string {
-	return s.Path
+func (p *Pkg) Link() string {
+	return p.Path
 }
 
-func (s *Pkg) Doc() string {
-	return s.Package.Doc
+func (p *Pkg) Doc() string {
+	return p.Package.Doc
 }
