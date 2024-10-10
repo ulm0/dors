@@ -166,6 +166,7 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 						packagePath = "" // Represent root without "."
 					}
 
+					// TODO: check & fix
 					subPkgs := []*common.Pkg{}
 					if !g.config.SkipSubPkgs {
 						for _, imp := range pk.Imports {
@@ -175,25 +176,25 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error) {
 
 							subPath := strings.TrimPrefix(imp, modName+"/")
 							subPath = fmt.Sprintf("%s/%s", rootDir, subPath)
-							subDir, err := filepath.Rel(dir, subPath)
-							if err != nil {
-								log.Error("Failed to get sub-package path", "path", subPath, "error", err)
+
+							pkPath := fmt.Sprintf("%s/%s", rootDir, packagePath)
+							if !strings.Contains(subPath, pkPath) {
 								continue
 							}
 
 							// Corrected: Check subDir instead of subPath
 							if _, err := os.Stat(subPath); os.IsNotExist(err) {
-								log.Warn("Sub-package path does not exist", "path", subDir, "error", err)
+								log.Warn("Sub-package path does not exist", "path", packagePath, "error", err)
 								continue
 							} else if err != nil {
-								log.Error("Failed to stat sub-package path", "path", subDir, "error", err)
+								log.Error("Failed to stat sub-package path", "path", packagePath, "error", err)
 								continue
 							}
 
-							log.Info("Collecting sub-packages", "path", subDir)
-							subSubPkgs, err := g.collectPkgs(subDir)
+							log.Info("Collecting sub-packages", "path", packagePath)
+							subSubPkgs, err := g.collectPkgs(packagePath)
 							if err != nil {
-								log.Error("Failed to collect sub-packages", "path", subDir, "error", err)
+								log.Error("Failed to collect sub-packages", "path", packagePath, "error", err)
 								continue
 							}
 							subPkgs = append(subPkgs, subSubPkgs...)

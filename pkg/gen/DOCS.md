@@ -2,6 +2,14 @@
 
 Package gen provides a command to generate documentation for a Go package.
 
+## Sub Packages
+
+* [](/DOCS.md): Package gen provides a command to generate documentation for a Go package.
+
+* [markdown](markdown/DOCS.md)
+
+* [template](template/DOCS.md)
+
 ## Functions
 
 ### func [`containsGoFiles`](run.go#L72)
@@ -12,7 +20,7 @@ func containsGoFiles(dir string) (bool, error)
 
 containsGoFiles checks if a directory contains Go files excluding test files.
 
-### func [`filterSubPackages`](types.go#L354)
+### func [`filterSubPackages`](types.go#L360)
 
 ```go
 func filterSubPackages(allPackages []*common.Pkg) []*common.Pkg
@@ -20,7 +28,7 @@ func filterSubPackages(allPackages []*common.Pkg) []*common.Pkg
 
 filterSubPackages filters out the root package if necessary.
 
-### func [`getArgs`](types.go#L366)
+### func [`getArgs`](types.go#L372)
 
 ```go
 func getArgs(args []string) string
@@ -42,7 +50,7 @@ func loadPackages(dir string, includeUnexported bool) (*doc.Package, *token.File
 
 loadPackages loads the package documentation for a given directory.
 
-### func [`shouldExclude`](types.go#L253)
+### func [`shouldExclude`](types.go#L259)
 
 ```go
 func shouldExclude(relPath string, excludeMap map[string]struct{ ... }) bool
@@ -119,7 +127,7 @@ func (g *Gen) Run(cmd *cobra.Command, args []string)
 
 Run executes the documentation generation process.
 
-#### func [`(*Gen) attachSubPkgs`](types.go#L388)
+#### func [`(*Gen) attachSubPkgs`](types.go#L394)
 
 ```go
 func (g *Gen) attachSubPkgs(module string, pkg *doc.Package) []*common.Pkg
@@ -127,7 +135,7 @@ func (g *Gen) attachSubPkgs(module string, pkg *doc.Package) []*common.Pkg
 
 attachSubPkgs attaches sub-packages based on the module name and package imports.
 
-#### func [`(*Gen) buildExcludeMap`](types.go#L243)
+#### func [`(*Gen) buildExcludeMap`](types.go#L249)
 
 ```go
 func (g *Gen) buildExcludeMap() map[string]struct{ ... }
@@ -143,7 +151,7 @@ func (g *Gen) collectPkgs(rootDir string) ([]*common.Pkg, error)
 
 collectPkgs traverses the directory tree to collect Go packages.
 
-#### func [`(*Gen) generatePerPkgReadme`](types.go#L263)
+#### func [`(*Gen) generatePerPkgReadme`](types.go#L269)
 
 ```go
 func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
@@ -151,7 +159,7 @@ func (g *Gen) generatePerPkgReadme(allPackages []*common.Pkg, rootDir string, cf
 
 generatePerPkgReadme generates DOCS.md files for each package.
 
-#### func [`(*Gen) generateSummaryReadme`](types.go#L323)
+#### func [`(*Gen) generateSummaryReadme`](types.go#L329)
 
 ```go
 func (g *Gen) generateSummaryReadme(allPackages []*common.Pkg, rootDir string, cfg Config)
