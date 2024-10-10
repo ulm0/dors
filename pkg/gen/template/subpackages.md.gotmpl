@@ -4,7 +4,9 @@
 ## Sub Packages
 
 {{ range .SubPkgs }}
-* [{{ .Path }}]({{ .Path }}/{{ .DocFile }}){{if .Package.Doc}}: {{.Package.Doc}}{{end}}
+{{ if .Path }}
+* [{{ .Path }}]({{ .Path }}/{{ .DocFile }}){{ if .Package.Doc }}: {{ .Package.Doc }}{{ end }}
+{{ end }}
 {{ end }}
 
 {{ end }}
