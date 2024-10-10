@@ -1,0 +1,6 @@
+- id: dors
+  name: dors
+  description: Generate docs from comments in Go code
+  entry: dors gen
+  language: golang
+  pass_filenames: false
