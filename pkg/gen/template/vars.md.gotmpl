@@ -1,0 +1,17 @@
+{{ define "vars" }}
+{{ if . }}
+
+## Variables
+
+{{ range . }}
+
+### var [{{ inlineCode (index .Names 0) }}]({{ filename .Decl.Pos }}#L{{ lineNumber .Decl.Pos }})
+
+{{ doc .Doc }}
+
+{{ gocode (fmtDeclaration .Decl (index .Decl.Specs 0)) }}
+
+{{ end }}
+
+{{ end }}
+{{ end }}

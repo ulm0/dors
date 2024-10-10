@@ -1,0 +1,17 @@
+{{ define "typesConsts" }}
+{{ if . }}
+
+#### Constants
+
+{{ range . }}
+
+##### const [{{ inlineCode (index .Names 0) }}]({{ filename .Decl.Pos }}#L{{ lineNumber .Decl.Pos }})
+
+{{ gocode (fmtDeclaration .Decl (index .Decl.Specs 0)) }}
+
+{{ doc .Doc }}
+
+{{ end }}
+
+{{ end }}
+{{ end }}
